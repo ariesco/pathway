@@ -1,0 +1,187 @@
+fmod ALL-TOP is
+ pr META-LEVEL .
+
+ var  H : Header .
+ var  IL : ImportList .
+ var  M : Module .
+ var  SS : SortSet .
+ var  SSDS : SubsortDeclSet .
+ var  ODS : OpDeclSet .
+ var  MAS : MembAxSet .
+ var  ES : EquationSet .
+ vars RS RS' : RuleSet .
+ var  R : Rule .
+ vars T T' NT NT' : Term .
+ var  AtS : AttrSet .
+
+ op module2Top : Module -> Module .
+ ceq module2Top(M) =
+          mod H is IL sorts SS . SSDS ODS MAS ES RS' endm
+  if mod H is IL sorts SS . SSDS ODS MAS ES RS endm := M /\
+     RS' := rules2Top(M, RS) .
+ eq module2Top(M) = M [owise] .
+
+ op rules2Top : Module RuleSet -> RuleSet .
+ eq rules2Top(M, none) = none .
+ eq rules2Top(M, R RS) = rule2Top(M, R) rules2Top(M, RS) .
+
+ op rule2Top : Module Rule -> Rule .
+ ceq rule2Top(M, rl T => T' [AtS] .) = rl NT => NT' [AtS] .
+  if getType(metaReduce(M, T)) == 'Locations /\
+     NT  := encapsulateLocs(M, T) /\
+     NT' := encapsulateLocs(M, T') .
+ eq rule2Top(M, R) = R [owise] .
+
+ op encapsulateLocs : Module Term -> Term .
+ eq encapsulateLocs(M, T) = getTerm(metaNormalize(M, 'PD['__[T, 'L@#:Locations]])) .
+endfm
+
+fmod TOP-SIGNATURE is
+  inc FULL-MAUDE-SIGN .
+
+  op top_. : @ModExp@ -> @Input@ [ctor] .
+endfm
+
+fmod META-TOP-SIGN is
+ inc META-FULL-MAUDE-SIGN .
+ inc UNIT .
+
+ op TOP-GRAMMAR : -> FModule [memo] .
+ eq TOP-GRAMMAR = addImports((including 'TOP-SIGNATURE .), GRAMMAR) .
+endfm
+
+
+mod TOP-DATABASE-HANDLING is
+ pr COMMAND-PROCESSING .
+ inc DATABASE-HANDLING .
+ pr ALL-TOP .
+
+ sort TOPDatabaseClass .
+ subsort TOPDatabaseClass < DatabaseClass .
+
+ op TOPDatabase : -> TOPDatabaseClass [ctor] .
+
+ var  TDC : TOPDatabaseClass .
+ var  AtS : AttributeSet .
+ vars DB DB' DB'' DB1 DB2 DB3 : Database .
+ var  T : Term .
+ var  O : Oid .
+ var  ME : ModuleExpression .
+ vars M M' M1 M2 : Module .
+
+ crl [top-compiled] :
+     < O : TDC | db : DB,  input : ('top_.[T]), output : nil, AtS >
+  => < O : TDC | db : DB2, input : nilTermList, output : 'hola, AtS >
+  if ME := parseModExp(T) /\
+     compiledModule(ME, DB) /\
+     M := getTopModule(ME, DB) /\
+     M' := getFlatModule(ME, DB) /\
+     M1  := module2Top(M) /\
+     M2  := module2Top(M') /\
+     DB1 := insertTopModule(ME, M1, DB) /\
+     DB2 := insertFlatModule(ME, M2, DB1) .
+
+ crl [top-not-compiled] :
+     < O : TDC | db : DB,  input : ('top_.[T]), output : nil, AtS >
+  => < O : TDC | db : DB2, input : nilTermList, output : ('All 'rules
+                                                  'defined 'at 'top 'level.), AtS >
+  if ME := parseModExp(T) /\
+     not compiledModule(ME, DB) /\
+     DB' := database(evalModExp(ME, DB)) /\
+     M := getTopModule(ME, DB') /\
+     M' := getFlatModule(ME, DB') /\
+     M1  := module2Top(M) /\
+     M2  := module2Top(M') /\
+     DB1 := insertTopModule(ME, M1, DB') /\
+     DB2 := insertFlatModule(ME, M2, DB1) .
+endm
+
+mod TOP is
+ inc TOP-DATABASE-HANDLING .
+ inc META-TOP-SIGN .
+ inc LOOP-MODE .
+
+ var  QI : Qid .
+ vars QIL QIL' QIL'' : QidList .
+ var  Atts : AttributeSet .
+ var  N : Nat .
+ var  DB : Database .
+ vars RP RP' : ResultPair .
+ var  O : Oid .
+ var  X@Database : DatabaseClass .
+
+ op o : -> Oid [ctor] .
+
+ --- State for LOOP mode:
+ subsort Object < State .
+ op init-top : -> System .
+
+ op init-state : -> AttributeSet .
+ eq init-state = db : initialDatabase, default : 'CONVERSION .
+
+ op top-banner : -> QidList .
+ eq top-banner = nil .
+
+ rl [init] :
+    init-top
+ => [nil, < o : TOPDatabase | input : nilTermList, output : nil, init-state >, top-banner] .
+
+ crl [in] :
+     [QIL, < O : X@Database | input : nilTermList, Atts >, QIL']
+  => [nil,
+      < O : X@Database | input : getTerm(metaParse(TOP-GRAMMAR, QIL, '@Input@)), Atts >,
+      QIL']
+  if QIL =/= nil /\
+     metaParse(TOP-GRAMMAR, QIL, '@Input@) : ResultPair .
+
+ crl [in] :
+     [QIL, < O : X@Database | output : nil, Atts >, QIL']
+  => [nil,
+      < O : X@Database | output : ('\r 'Warning: '\o
+                printSyntaxError(metaParse(TOP-GRAMMAR, QIL, '@Input@), QIL)
+                '\n
+                '\r 'Error: '\o 'No 'parse 'for 'input. '\n), Atts >,
+      QIL']
+  if QIL =/= nil /\
+     noParse(N) := metaParse(TOP-GRAMMAR, QIL, '@Input@)  .
+
+ crl [in] :
+     [QIL, < O : X@Database | output : nil, Atts >, QIL']
+  => [nil,
+      < O : X@Database | output :  ('\r 'Error: '\o 'Ambiguous 'input. '\n), Atts >,
+      QIL']
+   if QIL =/= nil /\
+      ambiguity(RP, RP') := metaParse(TOP-GRAMMAR, QIL, '@Input@)  .
+
+ rl [out] :
+    [QIL, < O : X@Database | output : (QI QIL'), Atts >, QIL'']
+ => [QIL, < O : X@Database | output : nil, Atts >, (QIL'' QI QIL')] .
+endm
+
+set print conceal on .
+print conceal mod_is_sorts_._____endm .
+print conceal fmod_is_sorts_.____endfm .
+print conceal db .
+
+loop init-top .
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
