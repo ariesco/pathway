@@ -1,0 +1,197 @@
+fmod COMMON is
+ pr META-LEVEL .
+
+ vars T T' T'' : Term .
+ vars TL TL' TL'' TL1 TL2 : TermList .
+ var  T? : [Term] .
+ var  M : Module .
+ var  C : Condition .
+ var  Q : Qid .
+ var  B : Bound .
+ var  N : Nat .
+ var  Ty : Type .
+ var  SB : Substitution .
+ var  CT : Constant .
+ var  V : Variable .
+
+ sort Skeleton .
+ subsort Term < Skeleton .
+ op mtSkel : -> Skeleton [ctor] .
+
+ op noSimil : -> Constant .
+ eq noSimil = 'noSimil.Skeleton .
+
+ op similarities : TermList -> Skeleton .
+ ceq similarities(TL) = if T? :: Term
+                        then T?
+                        else mtSkel
+                        fi
+  if T? := similaritiesAux(TL) .
+
+ op similaritiesAux : TermList ~> Term .
+ eq similaritiesAux((T, TL)) = compare(T, TL) .
+
+ op compare : Term TermList ~> Term .
+ eq compare(T, empty) = T .
+ ceq compare(T, (T', TL)) = compare(T'', TL)
+  if T'' := compareAux(T, T') .
+
+ op compareAux : Term Term ~> Term .
+ ceq compareAux(Q[(T, TL)], Q[(T, TL')]) = if TL'' == empty
+                                 then Q[noSimil]
+                                 else Q[TL'']
+                                 fi
+  if TL'' := compareAux*((T, TL), (T, TL')) .
+ ceq compareAux(Q[TL], Q[TL']) = if TL'' == empty
+                                 then Q[noSimil]
+                                 else Q[TL'']
+                                 fi
+  if TL'' := compareAux*(TL, TL') [owise] .
+ eq compareAux(T, T) = T [owise] .
+
+ op compareAux* : TermList TermList -> TermList .
+ eq compareAux*(empty, TL) = empty .
+ eq compareAux*((CT, TL), (TL', CT, TL'')) = CT, compareAux*(TL, (TL', TL'')) .
+ eq compareAux*((V, TL), (TL', V, TL'')) = V, compareAux*(TL, (TL', TL'')) .
+ eq compareAux*((Q[TL], TL'), (TL1, Q[TL''], TL2)) =
+              compareAux(Q[TL], Q[TL'']), compareAux*(TL', (TL1, TL2)) .
+ eq compareAux*((T, TL), TL') = compareAux*(TL, TL') [owise] .
+
+ op allTerms : Module Term Term Condition Qid Bound -> TermList .
+ eq allTerms(M, T, T', C, Q, B) = allTerms(M, T, T', C, Q, B, 0, empty) .
+
+ op allTerms : Module Term Term Condition Qid Bound Nat TermList -> TermList .
+ ceq allTerms(M, T, T', C, Q, B, N, TL) = TL
+  if metaSearch(M, T, T', C, Q, B, N) == failure .
+ ceq allTerms(M, T, T', C, Q, B, N, TL) =
+                          allTerms(M, T, T', C, Q, B, s(N), (TL, T''))
+  if {T'', Ty, SB} := metaSearch(M, T, T', C, Q, B, N) .
+
+ op contained : Term TermList -> Bool .
+ eq contained(T, empty) = false .
+ eq contained(T, (T, TL)) = true .
+ eq contained(T, (T', TL)) = contained(T, TL) [owise] .
+
+ op computeSimilarities : Module Term Term Condition Qid Bound -> Skeleton .
+ ceq computeSimilarities(M, T, T', C, Q, B) = similarities(TL)
+  if TL := allTerms(M, T, T', C, Q, B) .
+endfm
+
+mod TEST is
+ pr QQ .
+ pr COMMON .
+
+ op init : -> Term .
+ eq init = upTerm(NgfDish) .
+
+ op pattern1 : -> Term .
+ eq pattern1 =
+   'PD['__['L:Locations,'`{_|_`}['CLm.LocName,'thCLm:Things],'`{_|_`}['CLi.LocName,'thCLi:Things],'`{_|_`}['XOut.LocName,'thXOut:Things],'`{_|_`}['CLc.LocName,'__['thCLc:Things,'`[_-_`][
+    'prot:BProtein,'__['act.Modification,'mod:ModSet]]]],'`{_|_`}['NUc.LocName,'thNUc:Things],'`{_|_`}['NgfRC.CompName,'_:_['Ngf.BProtein,'NgfR.BProtein]],'`{_|_`}['TrkaC.CompName,'__['T:Things,
+    '_:_['Ngf.BProtein,'`[_-_`]['Trka.TrkS,'Yphos.Modification]]]]]] .
+
+ op pattern2 : -> Term .
+ eq pattern2 =
+   'PD['__['soup:Soup,'`{_|_`}['CLm.LocName,'thingsCLm:Things],'`{_|_`}['CLi.LocName,'thingsCLi:Things],'`{_|_`}['XOut.LocName,'thingsXOut:Things],'`{_|_`}['CLc.LocName,'__[
+    'thingsCLc:Things,'`[_-_`]['erks:ErkS,'__['act.Modification,'modActErk:ModSet]],'`[_-_`]['akts:AktS,'__['act.Modification,'modActAkt:ModSet]]]],'`{_|_`}['NUc.LocName,'thingsNUc:Things]]] .
+
+ op cond1 : -> Condition .
+ eq cond1 = '_or_['_==_['_::`ErkS['prot:BProtein], 'true.Bool],
+                  '_==_['_::`AktS['prot:BProtein], 'true.Bool]] = 'true.Bool .
+endm
+
+red upTerm(PD( L:Locations {TrkaC | T:Things (Ngf : [Trka - Yphos])} {NgfRC | Ngf : NgfR}
+  {XOut | thXOut:Things}  {CLm | thCLm:Things}
+  {CLi | thCLi:Things}    {NUc | thNUc:Things}
+  {CLc | thCLc:Things [prot:BProtein - mod:ModSet act]})) .
+
+*** red metaSearch(upModule('QQ, true), init, pattern1, cond1, '+, unbounded, 0) .
+
+*** red allTerms(upModule('QQ, true), init, pattern1, nil, '+, 4) .
+
+red computeSimilarities(upModule('QQ, true), init, pattern1, cond1, '+, 7) .
+
+***(
+red computeSimilarities(upModule('QQ, true), init, pattern1, cond1, '+, 4) .
+
+'PD['__['`{_|_`}['CLc.LocName,'__['Ikk1.IkkS,'Ikk2.IkkS,'Irak1.BProtein,'Jnks.JnkS,'Matk.BProtein,'Myd88.BProtein,'P38s.P38S,'Pkcd.nPkcS,'Ripk2.BProtein,'Sqstm1.BProtein,
+    'Traf6.BProtein,'Znf274.BProtein,'`[_-_`]['noSimil.Skeleton]]],'`{_|_`}['CLi.LocName,'__['`[_-_`]['Hras.HrasSort],'`[_-_`]['Rap1a.Rap1aSort],'`[_-_`]['Rit1.BProtein]]],'`{_|_`}['CLm.LocName,
+    'empty.MtSoup],'`{_|_`}['NUc.LocName,'__['Elk1.BProtein]],'`{_|_`}['NgfRC.CompName,'_:_['Ngf.BProtein,'NgfR.BProtein]],'`{_|_`}['TrkaC.CompName],'`{_|_`}['XOut.LocName,'Ngf.BProtein]]]
+
+PD({ CLc | Ikk1 Ikk2 Irak1 Jnks Matk Myd88 P38s Pkcd Ripk2 Sqstm1 Traf6 Znf274}
+        {CLi | [Hras - _] [Rap1a - _] [Rit1 - _]} {CLm | empty} {NUc | Elk1} {NgfRC | Ngf : NgfR} {TrkaC | _} {XOut | Ngf})
+)
+
+***(
+red computeSimilarities(upModule('QQ, true), init, pattern1, cond1, '+, 5) .
+
+'PD['__['`{_|_`}['CLc.LocName,'__['Ikk1.IkkS,'Ikk2.IkkS,'Irak1.BProtein,'Jnks.JnkS,'Matk.BProtein,'Myd88.BProtein,'P38s.P38S,'Pkcd.nPkcS,'Ripk2.BProtein,'Sqstm1.BProtein,
+    'Traf6.BProtein,'Znf274.BProtein,'`[_-_`]['noSimil.Skeleton]]],'`{_|_`}['CLi.LocName,'__['`[_-_`]['Hras.HrasSort],'`[_-_`]['Rap1a.Rap1aSort],'`[_-_`]['Rit1.BProtein]]],'`{_|_`}['CLm.LocName,
+    'empty.MtSoup],'`{_|_`}['NUc.LocName,'__['Elk1.BProtein]],'`{_|_`}['NgfRC.CompName,'_:_['Ngf.BProtein,'NgfR.BProtein]],'`{_|_`}['TrkaC.CompName],'`{_|_`}['XOut.LocName,'Ngf.BProtein]]]
+
+PD({ CLc | Ikk1 Ikk2 Irak1 Jnks Matk Myd88 P38s Pkcd Ripk2 Sqstm1 Traf6 Znf274}
+        {CLi | [Hras - _] [Rap1a - _] [Rit1 - _]} {CLm | empty} {NUc | Elk1} {NgfRC | Ngf : NgfR} {TrkaC | _} {XOut | Ngf})
+)
+
+***(
+red computeSimilarities(upModule('QQ, true), init, pattern1, cond1, '+, 6) .
+
+'PD['__['`{_|_`}['CLc.LocName,'__['Ikk1.IkkS,'Ikk2.IkkS,'Irak1.BProtein,'Jnks.JnkS,'Matk.BProtein,'Myd88.BProtein,'Pkcd.nPkcS,'Ripk2.BProtein,'Sqstm1.BProtein,'Traf6.BProtein,
+    'Znf274.BProtein,'`[_-_`]['noSimil.Skeleton]]],'`{_|_`}['CLi.LocName,'__['`[_-_`]['Hras.HrasSort],'`[_-_`]['Rap1a.Rap1aSort],'`[_-_`]['Rit1.BProtein]]],'`{_|_`}['CLm.LocName,'empty.MtSoup],
+    '`{_|_`}['NUc.LocName,'__['noSimil.Skeleton]],'`{_|_`}['NgfRC.CompName,'_:_['Ngf.BProtein,'NgfR.BProtein]],'`{_|_`}['TrkaC.CompName],'`{_|_`}['XOut.LocName,'Ngf.BProtein]]]
+
+PD({ CLc | Ikk1 Ikk2 Irak1 Jnks Matk Myd88 Pkcd Ripk2 Sqstm1 Traf6 Znf274}
+        {CLi | [Hras - _] [Rap1a - _] [Rit1 - _]} {CLm | empty} {NUc | _} {NgfRC | Ngf : NgfR} {TrkaC | _} {XOut | Ngf})
+)
+
+***(
+red computeSimilarities(upModule('QQ, true), init, pattern1, cond1, '+, 7) .
+
+'PD['__['`{_|_`}['CLc.LocName,'__['Ikk1.IkkS,'Ikk2.IkkS,'Irak1.BProtein,'Jnks.JnkS,'Matk.BProtein,'Myd88.BProtein,'Pkcd.nPkcS,'Ripk2.BProtein,'Sqstm1.BProtein,'Traf6.BProtein,
+    'Znf274.BProtein,'`[_-_`]['noSimil.Skeleton]]],'`{_|_`}['CLi.LocName,'__['`[_-_`]['Hras.HrasSort],'`[_-_`]['Rap1a.Rap1aSort],'`[_-_`]['Rit1.BProtein]]],'`{_|_`}['CLm.LocName,'empty.MtSoup],
+    '`{_|_`}['NUc.LocName,'__['noSimil.Skeleton]],'`{_|_`}['NgfRC.CompName,'_:_['Ngf.BProtein,'NgfR.BProtein]],'`{_|_`}['TrkaC.CompName],'`{_|_`}['XOut.LocName,'Ngf.BProtein]]]
+
+PD({ CLc | Ikk1 Ikk2 Irak1 Jnks Matk Myd88 Pkcd Ripk2 Sqstm1 Traf6 Znf274}
+        {CLi | [Hras - _] [Rap1a - _] [Rit1 - _]} {CLm | empty} {NUc | _} {NgfRC | Ngf : NgfR} {TrkaC | _} {XOut | Ngf})
+
+45107 solutions
+
+
+)
+
+eof
+
+
+
+search [,5] in QQ : NgfDish =>+ PD( soup:Soup
+  {XOut | thXOut:Things}  {CLm | thCLm:Things}
+  {CLi | thCLi:Things}    {NUc | thNUc:Things}
+  {CLc | thCLc:Things [prot:BProtein - mod:ModSet act]})
+  such that (prot:BProtein :: ErkS  or  prot:BProtein :: AktS ) = true .
+
+eof
+
+*** red computeSimilarities(upModule('QQ, true), init, pattern, cond, '+, unbounded) .
+
+red upTerm(PD(
+soup:Soup
+{XOut | thingsXOut:Things}
+{CLm | thingsCLm:Things }
+{CLi | thingsCLi:Things}
+{NUc | thingsNUc:Things}
+{CLc | thingsCLc:Things
+   [erks:ErkS - modActErk:ModSet act]
+   [akts:AktS - modActAkt:ModSet act]  })) .
+
+eof
+
+red similarities(('F['G['0.Zero], 'c.Qid, 'a.Qid], 'F['b.Qid, 'c.Qid, 'G['c.Nat]], 'F['b.Qid, 'c.Qid, 'G['c.Nat]])) .
+
+eof
+
+red similaritiesAux(('F['G['0.Zero], 'c.Qid, 'a.Qid], 'F['b.Qid, 'c.Qid, 'G['c.Nat]], 'F['b.Qid, 'c.Qid, 'G['c.Nat]])) .
+
+red compareAux('F['G['0.Zero], 'c.Qid, 'a.Qid], 'F['b.Qid, 'c.Qid, 'G['c.Nat]]) .
+
+red compareAux('F['G['noSimil.Skeleton],'c.Qid], 'F['b.Qid, 'c.Qid, 'G['c.Nat]]) .
+
