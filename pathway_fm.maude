@@ -1,0 +1,211 @@
+load full-maude.maude
+
+load all_top.maude
+load softset.maude
+
+fmod PLE-SIGNATURE is
+  inc FULL-MAUDE-SIGN .
+
+  op top_. : @ModExp@ -> @Input@ [ctor] .
+  op ssrew_for_. : @Bubble@ @NeTokenList@ -> @Input@ [ctor] .
+endfm
+
+fmod PLE-META-SIGN is
+ inc META-FULL-MAUDE-SIGN .
+ inc UNIT .
+
+ op PLE-GRAMMAR : -> FModule [memo] .
+ eq PLE-GRAMMAR = addImports((including 'PLE-SIGNATURE .), GRAMMAR) .
+endfm
+
+fmod PLE-COMMAND-PROCESSING is
+ pr ALL-TOP .
+ pr UNDEF-TO-ZERO .
+
+endfm
+
+
+mod PLE-DATABASE-HANDLING is
+ pr PLE-COMMAND-PROCESSING .
+ pr COMMAND-PROCESSING .
+ inc DATABASE-HANDLING .
+ pr SOFTSET .
+
+ sort PLEDatabaseClass .
+ subsort PLEDatabaseClass < DatabaseClass .
+
+ op PLEDatabase : -> PLEDatabaseClass [ctor] .
+
+ vars DB DB' DB'' DB1 DB2 DB3 : Database .
+ var  TDC : PLEDatabaseClass .
+ var  ME : ModuleExpression .
+ vars M M' M1 M2 : Module .
+ var  AtS : AttributeSet .
+ vars QIL QIL' : QidList .
+ vars T T' T'' : Term .
+ var  TL : TermList .
+ vars Q Q' : Qid .
+ var  O : Oid .
+
+
+ -----------------------------------------------------------------------------------------
+ --- Command: 'top_.                                                                   ---
+ -----------------------------------------------------------------------------------------
+
+ crl [top-compiled] :
+     < O : TDC | db : DB,  input : ('top_.[T]), output : nil, AtS >
+  => < O : TDC | db : DB2, input : nilTermList, output : ('All 'rules
+                                                  'defined 'at 'top 'level.), AtS >
+  if ME := parseModExp(T) /\
+     compiledModule(ME, DB) /\
+     M := getTopModule(ME, DB) /\
+     M' := getFlatModule(ME, DB) /\
+     M1  := module2Top(M) /\
+     M2  := module2Top(M') /\
+     DB1 := insertTopModule(ME, M1, DB) /\
+     DB2 := insertFlatModule(ME, M2, DB1) .
+
+ crl [top-not-compiled] :
+     < O : TDC | db : DB,  input : ('top_.[T]), output : nil, AtS >
+  => < O : TDC | db : DB2, input : nilTermList, output : ('All 'rules
+                                                  'defined 'at 'top 'level.), AtS >
+  if ME := parseModExp(T) /\
+     not compiledModule(ME, DB) /\
+     DB' := database(evalModExp(ME, DB)) /\
+     M := getTopModule(ME, DB') /\
+     M' := getFlatModule(ME, DB') /\
+     M1  := module2Top(M) /\
+     M2  := module2Top(M') /\
+     DB1 := insertTopModule(ME, M1, DB') /\
+     DB2 := insertFlatModule(ME, M2, DB1) .
+
+
+ -----------------------------------------------------------------------------------------
+ --- Command: 'ssrew_for_.                                                             ---
+ -----------------------------------------------------------------------------------------
+
+ crl [ssrew] :
+     < O : TDC | db : DB,  input : ('ssrew_for_.['bubble[T], 'neTokenList[T']]),
+                 output : nil, default : ME, AtS >
+  => < O : TDC | db : DB, input : nilTermList, default : ME,
+                 output : ('All 'rules 'defined 'at 'top 'level.), AtS >
+  if M := if compiledModule(ME, DB)
+          then getFlatModule(ME, DB)
+          else getFlatModule(modExp(evalModExp(ME, DB)), database(evalModExp(ME, DB)))
+          fi /\
+     T'' := reduce(M, getTerm(metaParse(M, downQidList(T), 'SoftDish))) /\
+     QIL := downQidList(T') /\
+     QIL' := getSimpleQids(QIL) [print T'' " and " QIL'] .
+
+ op getSimpleQids : QidList -> QidList .
+ eq getSimpleQids(nil) = nil .
+ ceq getSimpleQids(Q QIL) = Q' getSimpleQids(QIL)
+  if Q' := qid(string(Q) + ".Sort") .
+
+ op reduce : Module Term ~> Term .
+ eq reduce(M, T) = getTerm(metaReduce(M, T)) .
+endm
+
+mod PLE is
+ inc PLE-DATABASE-HANDLING .
+ inc PLE-META-SIGN .
+ inc LOOP-MODE .
+
+ var  QI : Qid .
+ vars QIL QIL' QIL'' : QidList .
+ var  Atts : AttributeSet .
+ var  N : Nat .
+ var  DB : Database .
+ vars RP RP' : ResultPair .
+ var  O : Oid .
+ var  X@Database : DatabaseClass .
+
+ op o : -> Oid [ctor] .
+
+ --- State for LOOP mode:
+ subsort Object < State .
+ op init-ple : -> System .
+
+ op init-state : -> AttributeSet .
+ eq init-state = db : initialDatabase, default : 'CONVERSION .
+
+ op ple-banner : -> QidList .
+ eq ple-banner = ('\n '\t '\s '\s '\s '\s 'Pathway 'logic 'extended '1.1
+                  '\n '\t '\s '\s '\s '\s '\s '\s '\s 'November '27th '2017 '\n) .
+
+ rl [init] :
+    init-ple
+ => [nil, < o : PLEDatabase | input : nilTermList, output : nil, init-state >, ple-banner] .
+
+ crl [in] :
+     [QIL, < O : X@Database | input : nilTermList, Atts >, QIL']
+  => [nil,
+      < O : X@Database | input : getTerm(metaParse(PLE-GRAMMAR, QIL, '@Input@)), Atts >,
+      QIL']
+  if QIL =/= nil /\
+     metaParse(PLE-GRAMMAR, QIL, '@Input@) : ResultPair .
+
+ crl [in] :
+     [QIL, < O : X@Database | output : nil, Atts >, QIL']
+  => [nil,
+      < O : X@Database | output : ('\r 'Warning: '\o
+                printSyntaxError(metaParse(PLE-GRAMMAR, QIL, '@Input@), QIL)
+                '\n
+                '\r 'Error: '\o 'No 'parse 'for 'input. '\n), Atts >,
+      QIL']
+  if QIL =/= nil /\
+     noParse(N) := metaParse(PLE-GRAMMAR, QIL, '@Input@)  .
+
+ crl [in] :
+     [QIL, < O : X@Database | output : nil, Atts >, QIL']
+  => [nil,
+      < O : X@Database | output :  ('\r 'Error: '\o 'Ambiguous 'input. '\n), Atts >,
+      QIL']
+   if QIL =/= nil /\
+      ambiguity(RP, RP') := metaParse(PLE-GRAMMAR, QIL, '@Input@)  .
+
+ rl [out] :
+    [QIL, < O : X@Database | output : (QI QIL'), Atts >, QIL'']
+ => [QIL, < O : X@Database | output : nil, Atts >, (QIL'' QI QIL')] .
+endm
+
+set print conceal on .
+print conceal mod_is_sorts_._____endm .
+print conceal fmod_is_sorts_.____endfm .
+print conceal db .
+
+set print attribute on .
+
+loop init-ple .
+
+(mod TEST is
+ pr SOFTSET .
+
+ op testD : -> Dish .
+
+ op testSD : -> SoftDish .
+ eq testSD = testD (['a = 0], ['b = 1], ['c = *], ['d = 0]) .
+endm)
+
+(ssrew testSD for 'a 'b 'c .)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

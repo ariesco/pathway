@@ -1,0 +1,210 @@
+fmod VALUE is
+ sort Value .
+
+ ops 0 1 * : -> Value [ctor] .
+endfm
+
+fmod MATRIX is
+ pr VALUE .
+ sorts Row Matrix .
+ subsort Value < Row < Matrix .
+
+ op mtRow : -> Row [ctor] .
+ op _,_ : Row Row -> Row [ctor assoc id: mtRow] .
+
+ op mt : -> Matrix [ctor] .
+ op __ : Matrix Matrix -> Matrix [ctor assoc id: mt] .
+endfm
+
+fmod PREDEF-VALUE-FUNCTIONS is
+ pr MATRIX .
+ pr NAT .
+
+ vars C BV S N : Nat .
+ var  M : Matrix .
+ var  R : Row .
+
+ *** Replaces * by 0 and adds up all values
+ op undefZero : Matrix -> Nat .
+ eq undefZero(M) = compUndefZero(M, 0, 0, 0) .
+
+ *** Current - Best value - Selected Row
+ op compUndefZero : Matrix Nat Nat Nat -> Nat .
+ eq compUndefZero(mt, C, BV, S) = S .
+ ceq compUndefZero(R M, C, BV, S) =
+               if N >= BV
+               then compUndefZero(M, s(C), N, C)
+               else compUndefZero(M, s(C), BV, S)
+               fi
+  if N := addUndefZero(R) .
+
+ op addUndefZero : Row -> Nat .
+ eq addUndefZero(mtRow) = 0 .
+ eq addUndefZero(0 R) = addUndefZero(R) .
+ eq addUndefZero(1 R) = s(addUndefZero(R)) .
+ eq addUndefZero(* R) = addUndefZero(R) .
+
+ *** Replaces * by 0 and adds up all values
+ op undefOne : Matrix -> Nat .
+ eq undefOne(M) = compUndefOne(M, 0, 0, 0) .
+
+ *** Current - Best value - Selected Row
+ op compUndefOne : Matrix Nat Nat Nat -> Nat .
+ eq compUndefOne(mt, C, BV, S) = S .
+ ceq compUndefOne(R M, C, BV, S) =
+               if N >= BV
+               then compUndefOne(M, s(C), N, C)
+               else compUndefOne(M, s(C), BV, S)
+               fi
+  if N := addUndefOne(R) .
+
+ op addUndefOne : Row -> Nat .
+ eq addUndefOne(mtRow) = 0 .
+ eq addUndefOne(0 R) = addUndefZero(R) .
+ eq addUndefOne(1 R) = s(addUndefZero(R)) .
+ eq addUndefOne(* R) = s(addUndefZero(R)) .
+endfm
+
+load theops.maude
+
+fmod SOFTSET is
+ pr META-LEVEL .
+ pr VALUE .
+ pr DISH .
+ pr QID .
+
+ sort AttId Att Atts SoftDish .
+ subsort Qid < AttId .
+ subsort Att < Atts .
+
+ op [_=_] : AttId Value -> Att [ctor] .
+ op mtAtts : -> Atts [ctor] .
+ op _,_ : Atts Atts -> Atts [ctor assoc comm id: mtAtts] .
+
+ op __ : Dish Atts -> SoftDish [ctor] .
+endfm
+
+fth SOFT-SET-FUN is
+ pr MATRIX .
+ pr NAT .
+
+ op computeValue : Matrix -> Nat .
+endfth
+
+fmod SS-STRAT{X :: SOFT-SET-FUN} is
+ pr META-LEVEL .
+ pr MATRIX .
+
+ sort ApplyCell ApplyCellList .
+ subsort ApplyCell < ApplyCellList .
+
+ op [_,_] : Qid Nat -> ApplyCell [ctor] .
+
+ vars TL TL' ATTS : TermList .
+ var  SB : Substitution .
+ var  V : Variable .
+ var  MX : Matrix .
+ vars T T' : Term .
+ var  M : Module .
+ var  Ty : Type .
+ var  N : Nat .
+
+ op rewStrat : Module Term TermList -> Term .
+ ceq rewStrat(M, T, ATTS) = rewStrat(M, T', ATTS)
+  if T' := next(M, T, ATTS) .
+ eq rewStrat(M, T, ATTS) = T [owise] .
+
+ op next : Module Term TermList ~> Term .
+ ceq next(M, T, ATTS) = T'
+  if TL := allReachableTerms(M, T) /\
+     TL =/= empty /\
+     MX := matrixFromTerms(TL, ATTS) /\
+     N := computeValue(MX) /\
+     T' := TL [N] .
+
+ op allReachableTerms : Module Term -> TermList .
+ ceq allReachableTerms(M, T) = allReachableTerms(M, T, V, 0, empty)
+  if Ty := getType(metaReduce(M, T)) /\
+     V := qid("V:" + string(Ty)) .
+
+ op allReachableTerms : Module Term Variable Nat TermList -> TermList .
+ ceq allReachableTerms(M, T, V, N, TL) = TL
+  if metaSearch(M, T, V, nil, '+, 1, N) == failure .
+ ceq allReachableTerms(M, T, V, N, TL) = allReachableTerms(M, T, V, s(N), (TL, T))
+  if {T, Ty, SB} := metaSearch(M, T, V, nil, '+, 1, N) .
+
+ op matrixFromTerms : TermList TermList -> Matrix .
+ eq matrixFromTerms(empty, ATTS) = mt .
+ eq matrixFromTerms((T, TL), ATTS) = rowFromTerm(T, ATTS) matrixFromTerms(TL, ATTS) .
+
+ op rowFromTerm : Term TermList -> Row .
+ *** Dish and Attributes
+ eq rowFromTerm('__[T, T'], ATTS) = $rowFromTerm(T', ATTS) .
+ eq rowFromTerm(T, ATTS) = mtRow [owise] .
+
+ op $rowFromTerm : Term TermList -> Row .
+ *** Attribute list
+ eq $rowFromTerm('__[TL], ATTS) = $rowFromTerm*(TL, ATTS) .
+ eq $rowFromTerm(T, ATTS) = mtRow [owise] .
+
+ op $rowFromTerm* : TermList TermList -> Row .
+ eq $rowFromTerm*(empty, ATTS) = mtRow .
+ eq $rowFromTerm*(('`[_=_`][T,T'], TL), ATTS) =
+                        if T in ATTS
+                        then downTerm(T', 0)
+                        else mtRow
+                        fi, $rowFromTerm*(TL, ATTS) .
+ eq $rowFromTerm*(TL, ATTS) = mtRow [owise] .
+
+ op _in_ : Term TermList -> Bool .
+ eq T in (TL, T, TL') = true .
+ eq T in TL = false [owise] .
+
+ op _[_] : TermList Nat ~> Term .
+ eq (T, TL) [0] = T .
+ eq (T, TL) [s(N)] = TL [N] .
+endfm
+
+view UndefToZero from SOFT-SET-FUN to PREDEF-VALUE-FUNCTIONS is
+ op computeValue to undefZero .
+endv
+
+view UndefToOne from SOFT-SET-FUN to PREDEF-VALUE-FUNCTIONS is
+ op computeValue to undefOne .
+endv
+
+fmod UNDEF-TO-ZERO is
+ pr SS-STRAT{UndefToZero} .
+endfm
+
+fmod UNDEF-TO-ONE is
+ pr SS-STRAT{UndefToOne} .
+endfm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

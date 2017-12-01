@@ -1,0 +1,38 @@
+fmod ALL-TOP is
+ pr META-LEVEL .
+
+ var  H : Header .
+ var  IL : ImportList .
+ var  M : Module .
+ var  SS : SortSet .
+ var  SSDS : SubsortDeclSet .
+ var  ODS : OpDeclSet .
+ var  MAS : MembAxSet .
+ var  ES : EquationSet .
+ vars RS RS' : RuleSet .
+ var  R : Rule .
+ vars T T' NT NT' : Term .
+ var  AtS : AttrSet .
+
+ op module2Top : Module -> Module .
+ ceq module2Top(M) =
+          mod H is IL sorts SS . SSDS ODS MAS ES RS' endm
+  if mod H is IL sorts SS . SSDS ODS MAS ES RS endm := M /\
+     RS' := rules2Top(M, RS) .
+ eq module2Top(M) = M [owise] .
+
+ op rules2Top : Module RuleSet -> RuleSet .
+ eq rules2Top(M, none) = none .
+ eq rules2Top(M, R RS) = rule2Top(M, R) rules2Top(M, RS) .
+
+ op rule2Top : Module Rule -> Rule .
+ ceq rule2Top(M, rl T => T' [AtS] .) = rl NT => NT' [AtS] .
+  if getType(metaReduce(M, T)) == 'Locations /\
+     NT  := encapsulateLocs(M, T) /\
+     NT' := encapsulateLocs(M, T') .
+ eq rule2Top(M, R) = R [owise] .
+
+ op encapsulateLocs : Module Term -> Term .
+ eq encapsulateLocs(M, T) = getTerm(metaNormalize(M, 'PD['__[T, 'L@#:Locations]])) .
+endfm
+
