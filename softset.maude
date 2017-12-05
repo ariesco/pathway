@@ -44,7 +44,7 @@ fmod PREDEF-VALUE-FUNCTIONS is
  eq addUndefZero(1 R) = s(addUndefZero(R)) .
  eq addUndefZero(* R) = addUndefZero(R) .
 
- *** Replaces * by 0 and adds up all values
+ *** Replaces * by 1 and adds up all values
  op undefOne : Matrix -> Nat .
  eq undefOne(M) = compUndefOne(M, 0, 0, 0) .
 
@@ -63,6 +63,20 @@ fmod PREDEF-VALUE-FUNCTIONS is
  eq addUndefOne(0 R) = addUndefZero(R) .
  eq addUndefOne(1 R) = s(addUndefZero(R)) .
  eq addUndefOne(* R) = s(addUndefZero(R)) .
+
+ *** Replaces * by 1 and adds up all values
+ op undefSemi : Matrix -> Nat .
+ eq undefSemi(M) = compSemi(M, 0, 0, 0) .
+
+ *** Replaces * by 0.5 and adds up all values
+ op compSemi : Matrix Nat Nat Nat -> Nat .
+ eq compSemi(mt, C, BV, S) = S .
+ ceq compSemi(R M, C, BV, S) =
+               if N >= BV
+               then compSemi(M, s(C), N, C)
+               else compSemi(M, s(C), BV, S)
+               fi
+  if N := (addUndefZero(R) + addUndefOne(R)) quo 2 .
 endfm
 
 load theops.maude
@@ -173,6 +187,10 @@ view UndefToOne from SOFT-SET-FUN to PREDEF-VALUE-FUNCTIONS is
  op computeValue to undefOne .
 endv
 
+view UndefSemi from SOFT-SET-FUN to PREDEF-VALUE-FUNCTIONS is
+ op computeValue to undefSemi .
+endv
+
 fmod UNDEF-TO-ZERO is
  pr SS-STRAT{UndefToZero} .
 endfm
@@ -181,9 +199,9 @@ fmod UNDEF-TO-ONE is
  pr SS-STRAT{UndefToOne} .
 endfm
 
-
-
-
+fmod UNDEF-TO-ONE is
+ pr SS-STRAT{UndefSemi} .
+endfm
 
 
 
