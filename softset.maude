@@ -6,14 +6,14 @@ endfm
 
 fmod MATRIX is
  pr VALUE .
- sorts Row Matrix .
- subsort Value < Row < Matrix .
+ sorts Row SoftSet .
+ subsort Value < Row < SoftSet .
 
  op mtRow : -> Row [ctor] .
  op _,_ : Row Row -> Row [ctor assoc id: mtRow] .
 
- op mt : -> Matrix [ctor] .
- op __ : Matrix Matrix -> Matrix [ctor assoc id: mt] .
+ op mt : -> SoftSet [ctor] .
+ op __ : SoftSet SoftSet -> SoftSet [ctor assoc id: mt] .
 endfm
 
 fmod PREDEF-VALUE-FUNCTIONS is
@@ -21,15 +21,15 @@ fmod PREDEF-VALUE-FUNCTIONS is
  pr NAT .
 
  vars C BV S N : Nat .
- var  M : Matrix .
+ var  M : SoftSet .
  var  R : Row .
 
  *** Replaces * by 0 and adds up all values
- op undefZero : Matrix -> Nat .
+ op undefZero : SoftSet -> Nat .
  eq undefZero(M) = compUndefZero(M, 0, 0, 0) .
 
  *** Current - Best value - Selected Row
- op compUndefZero : Matrix Nat Nat Nat -> Nat .
+ op compUndefZero : SoftSet Nat Nat Nat -> Nat .
  eq compUndefZero(mt, C, BV, S) = S .
  ceq compUndefZero(R M, C, BV, S) =
                if N >= BV
@@ -45,11 +45,11 @@ fmod PREDEF-VALUE-FUNCTIONS is
  eq addUndefZero(* R) = addUndefZero(R) .
 
  *** Replaces * by 1 and adds up all values
- op undefOne : Matrix -> Nat .
+ op undefOne : SoftSet -> Nat .
  eq undefOne(M) = compUndefOne(M, 0, 0, 0) .
 
  *** Current - Best value - Selected Row
- op compUndefOne : Matrix Nat Nat Nat -> Nat .
+ op compUndefOne : SoftSet Nat Nat Nat -> Nat .
  eq compUndefOne(mt, C, BV, S) = S .
  ceq compUndefOne(R M, C, BV, S) =
                if N >= BV
@@ -65,11 +65,11 @@ fmod PREDEF-VALUE-FUNCTIONS is
  eq addUndefOne(* R) = s(addUndefZero(R)) .
 
  *** Replaces * by 1 and adds up all values
- op undefSemi : Matrix -> Nat .
+ op undefSemi : SoftSet -> Nat .
  eq undefSemi(M) = compSemi(M, 0, 0, 0) .
 
  *** Replaces * by 0.5 and adds up all values
- op compSemi : Matrix Nat Nat Nat -> Nat .
+ op compSemi : SoftSet Nat Nat Nat -> Nat .
  eq compSemi(mt, C, BV, S) = S .
  ceq compSemi(R M, C, BV, S) =
                if N >= BV
@@ -87,22 +87,22 @@ fmod SOFTSET is
  pr DISH .
  pr QID .
 
- sort AttId Att Atts SoftDish .
+ sort AttId Att AttSet SoftDish .
  subsort Qid < AttId .
- subsort Att < Atts .
+ subsort Att < AttSet .
 
  op [_=_] : AttId Value -> Att [ctor] .
- op mtAtts : -> Atts [ctor] .
- op _,_ : Atts Atts -> Atts [ctor assoc comm id: mtAtts] .
+ op mtSS : -> AttSet [ctor] .
+ op _,_ : AttSet AttSet -> AttSet [ctor assoc comm id: mtSS] .
 
- op __ : Dish Atts -> SoftDish [ctor] .
+ op __ : Dish AttSet -> SoftDish [ctor] .
 endfm
 
 fth SOFT-SET-FUN is
  pr MATRIX .
  pr NAT .
 
- op computeValue : Matrix -> Nat .
+ op computeValue : SoftSet -> Nat .
 endfth
 
 fmod SS-STRAT{X :: SOFT-SET-FUN} is
@@ -117,7 +117,7 @@ fmod SS-STRAT{X :: SOFT-SET-FUN} is
  vars TL TL' ATTS : TermList .
  var  SB : Substitution .
  var  V : Variable .
- var  MX : Matrix .
+ var  MX : SoftSet .
  vars T T' : Term .
  var  M : Module .
  var  Ty : Type .
@@ -147,7 +147,7 @@ fmod SS-STRAT{X :: SOFT-SET-FUN} is
  ceq allReachableTerms(M, T, V, N, TL) = allReachableTerms(M, T, V, s(N), (TL, T))
   if {T, Ty, SB} := metaSearch(M, T, V, nil, '+, 1, N) .
 
- op matrixFromTerms : TermList TermList -> Matrix .
+ op matrixFromTerms : TermList TermList -> SoftSet .
  eq matrixFromTerms(empty, ATTS) = mt .
  eq matrixFromTerms((T, TL), ATTS) = rowFromTerm(T, ATTS) matrixFromTerms(TL, ATTS) .
 
@@ -199,7 +199,7 @@ fmod UNDEF-TO-ONE is
  pr SS-STRAT{UndefToOne} .
 endfm
 
-fmod UNDEF-TO-ONE is
+fmod UNDEF-TO-SEMI is
  pr SS-STRAT{UndefSemi} .
 endfm
 

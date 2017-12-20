@@ -1,0 +1,34 @@
+fmod FINST is
+ pr META-LEVEL .
+
+ vars S S1 S2 : String .
+ var  ODS : OpDeclSet .
+ vars C C' C'' : Constant .
+ var  TyL : TypeList .
+ var  AtS : AttrSet .
+ var  M : Module .
+ var  H : Header .
+ var  Ty : Type .
+ var  Q : Qid .
+
+ op finst : Module -> Module .
+ eq finst(mod )
+
+  op mod_is_sorts_._____endm : Header ImportList SortSet SubsortDeclSet
+    OpDeclSet MembAxSet EquationSet RuleSet
+
+ op finst : RuleSet OpDeclSet -> RuleSet .
+
+ op getFamily : Module Constant Constant ~> Constant .
+ eq getFamily(M, C, C') = getFamily(getOps(M), C, C') .
+
+ op getFamily : OpDeclSet Constant Constant ~> Constant .
+ ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C''
+  if S1 := string(getName(C)) /\
+     find(S, S1, 0) =/= notFound /\
+     S2 := string(getName(C')) /\
+     find(S, S2, 0) =/= notFound /\
+     C'' := qid(string(Q) + "." + string(Ty)) .
+ *** Comprobar caso en el que ya se ha generalizado una vez
+
+endfm
