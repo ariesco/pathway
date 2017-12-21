@@ -1,23 +1,34 @@
 fmod FINST is
  pr META-LEVEL .
 
- vars S S1 S2 : String .
- var  ODS : OpDeclSet .
+ var  SSDS : SubsortDeclSet .
  vars C C' C'' : Constant .
+ var  EqS : EquationSet .
+ vars  RS RS' : RuleSet .
+ vars S S1 S2 : String .
+ vars R R' R'' : Rule .
+ var  ODS : OpDeclSet .
+ var  IL : ImportList .
+ var  MAS : MembAxSet .
  var  TyL : TypeList .
  var  AtS : AttrSet .
+ var  SS : SortSet .
  var  M : Module .
  var  H : Header .
  var  Ty : Type .
  var  Q : Qid .
 
  op finst : Module -> Module .
- eq finst(mod )
-
-  op mod_is_sorts_._____endm : Header ImportList SortSet SubsortDeclSet
-    OpDeclSet MembAxSet EquationSet RuleSet
+ ceq finst(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
+              mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm
+  if RS' := finst(RS, ODS) .
 
  op finst : RuleSet OpDeclSet -> RuleSet .
+ ceq finst(R R' RS, ODS) = finst(R'' RS, ODS)
+  if R'' := join(R, R', ODS) .
+ eq finst(RS, ODS) = RS [owise] .
+
+ op join : Rule Rule OpDeclSet ~> Rule .
 
  op getFamily : Module Constant Constant ~> Constant .
  eq getFamily(M, C, C') = getFamily(getOps(M), C, C') .
@@ -29,6 +40,12 @@ fmod FINST is
      S2 := string(getName(C')) /\
      find(S, S2, 0) =/= notFound /\
      C'' := qid(string(Q) + "." + string(Ty)) .
- *** Comprobar caso en el que ya se ha generalizado una vez
-
+ ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C
+  if Q == getName(C) /\
+     S2 := string(getName(C')) /\
+     find(S, S2, 0) =/= notFound .
+ ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C'
+  if S1 := string(getName(C)) /\
+     find(S, S1, 0) =/= notFound /\
+     Q == getName(C') .
 endfm
