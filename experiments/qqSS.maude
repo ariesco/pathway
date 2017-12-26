@@ -1,0 +1,129 @@
+*** placed in PLA/Models/STM7
+
+mod QQ is
+ inc ALLRULES .
+ inc ALLOPS .
+*** *** inc MODEL-CHECKER .
+*** *** inc CLMCONTENTS .  *** ~/PLA/Models/STM/SDishes/Contents/CLmContents.maude
+*** *** inc CLICONTENTS .  *** ~/PLA/Models/STM/SDishes/Contents/CLiContents.maude
+*** *** inc CLCCONTENTS .  *** ~/PLA/Models/STM/SDishes/Contents/CLcContents.maude
+*** *** inc NUCCONTENTS .  *** ~/PLA/Models/STM/SDishes/Contents/NUcContents.maude
+
+*** inc ADRIAMYCINDISH .         *** ~/PLA/Models/STM/SDishes/AdriamycinDish.maude
+*** inc ANISODISH .         *** ~/PLA/Models/STM/SDishes/AnisoDish.maude
+*** inc BLEOMYCINDISH .    *** ~/PLA/Models/STM/SDishes/BleomycinDish.maude
+*** inc CD40DISH .         *** ~/PLA/Models/STM/SDishes/Cd40Dish.maude
+*** inc CSF1DISH .         *** ~/PLA/Models/STM/SDishes/Csf1Dish.maude
+*** inc DRUGDISH .         *** ~/PLA/Models/STM/SDishes/DrugDish.maude
+*** inc EGFDISH .           *** ~/PLA/Models/STM/SDishes/EgfDish.maude
+*** inc ETOPOSIDEDISH .     *** ~/PLA/Models/STM/SDishes/EtoposideDish.maude
+*** *** inc HGFDISH .        *** ~/PLA/Models/STM/SDishes/HgfDish.maude
+*** inc HYDROXYUREADISH .     *** ~/PLA/Models/STM/SDishes/HydroxyureaDish.maude
+*** inc IFNABDISH .    *** ~/PLA/Models/STM/SDishes/IfnabDish.maude
+*** inc IFNGDISH .    *** ~/PLA/Models/STM/SDishes/IfngDish.maude
+*** inc IGF1DISH .        *** ~/PLA/Models/STM/SDishes/Igf1Dish.maude
+*** inc IL1DISH .           *** ~/PLA/Models/STM/SDishes/IL1Dish.maude
+*** inc IL2DISH .           *** ~/PLA/Models/STM/SDishes/IL1Dish.maude
+*** inc IL4DISH .        *** ~/PLA/Models/STM/SDishes/IL4Dish.maude
+*** inc IL6DISH .        *** ~/PLA/Models/STM/SDishes/IL6Dish.maude
+*** inc IL12DISH .        *** ~/PLA/Models/STM/SDishes/IL12Dish.maude
+*** inc IL22DISH .        *** ~/PLA/Models/STM/SDishes/IL22Dish.maude
+*** inc INSDISH .        *** ~/PLA/Models/STM/SDishes/InsDish.maude
+*** inc IRADDISH .         *** ~/PLA/Models/STM/SDishes/IRadDish.maude
+*** inc LPSDISH .           *** ~/PLA/Models/STM/SDishes/LpsDish.maude
+*** inc NCSDISH .        *** ~/PLA/Models/STM/SDishes/NCSDish.maude
+*** inc NGFDISH .        *** ~/PLA/Models/STM/SDishes/NgfDish.maude
+*** inc PDGFDISH .           *** ~/PLA/Models/STM/SDishes/PdgfDish.maude
+*** inc PMADISH .           *** ~/PLA/Models/STM/SDishes/PMADish.maude
+*** inc POLYICDISH .        *** ~/PLA/Models/STM/SDishes/PolyICDish.maude
+*** inc SERUMDISH .        *** ~/PLA/Models/STM/SDishes/SerumDish.maude
+*** inc SORBITOLDISH .        *** ~/PLA/Models/STM/SDishes/SorbitolDish.maude
+inc TGFB1DISH .         *** ~/PLA/Models/STM/SDishes/Tgfb1Dish.maude
+*** inc TLR9DISH .        *** ~/PLA/Models/STM/SDishes/TLR9Dish.maude
+*** inc TNFDISH .           *** ~/PLA/Models/STM/SDishes/TnfDish.maude
+*** inc UVDISH .        *** ~/PLA/Models/STM/SDishes/UVDish.maude
+*** inc VEGFDISH .        *** ~/PLA/Models/STM/SDishes/VegfDish.maude
+*** inc NOSTIMDISH .        *** ~/PLA/Models/STM/SDishes/NoStimDish.maude
+
+***(
+op allDish : -> Dish .
+eq allDish = PD(
+
+{XOut |
+Adriamycin
+Anisomycin
+Bleomycin
+Cd40L
+Csf1
+Egf
+Etoposide
+Hgf
+Hydroxyurea
+Ifnabs
+Ifng
+Igf1
+IL1 IL2 IL4 IL6 IL12 IL22
+Ins
+IR
+Lbp Lps Md2
+NCS
+Ngf
+Pdgf
+PMA
+PolyIC
+Serum
+Sorbitol
+Tgfb1
+Tnf
+TLR9L
+UV
+Vegfa
+
+}{Cd40C | Cd40
+}{Csf1RC | Csf1R
+}{EgfRC | EgfR
+}{GP130C | Gp130
+}{HgfRC | HgfR
+}{IfnaRC | IfnaR2
+}{IfngRC | empty
+}{Igf1RC | Igf1R
+}{IL1R1C | IL1R1
+}{IL2RC | IL2Rb
+}{IL4RC | IL4R
+}{IL12Rb1C | IL12Rb1
+}{IL12Rb2C | IL12Rb2
+}{IL12RC   | empty
+}{IL22RC   | IL22Ra1
+}{InsRC | InsR
+}{NgfRC | NgfR
+}{PdgfRC | PdgfR
+}{Tgfb1RC | TgfbR1 TgfbR2
+}{TLR2C | TLR2
+}{TLR3C | TLR3
+}{TLR4C | TLR4
+}{TLR9C | TLR9
+}{TnfR1C | TnfR1
+}{TrkaC | Trka
+}{VegfR2C | VegfR2
+
+}{CVc | [Rheb - GDP] Tsc1
+}{CHR | H2ax
+}{RNAC | capped-mRNA
+}{Sig | empty
+
+}{CLo | Cd14
+}{CLm | CLmContents IL10Rb
+}{CLi | CLiContents
+}{CLc | CLcContents
+}{NUc | NUcContents
+}) .
+
+)
+endm
+
+*** inc WNTDISH .        *** ~/PLA/Models/STM/SDishes/WntDish.maude
+
+
+
+
+

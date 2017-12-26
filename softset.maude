@@ -40,9 +40,9 @@ fmod PREDEF-VALUE-FUNCTIONS is
 
  op addUndefZero : Row -> Nat .
  eq addUndefZero(mtRow) = 0 .
- eq addUndefZero(0 R) = addUndefZero(R) .
- eq addUndefZero(1 R) = s(addUndefZero(R)) .
- eq addUndefZero(* R) = addUndefZero(R) .
+ eq addUndefZero((0, R)) = addUndefZero(R) .
+ eq addUndefZero((1, R)) = s(addUndefZero(R)) .
+ eq addUndefZero((*, R)) = addUndefZero(R) .
 
  *** Replaces * by 1 and adds up all values
  op undefOne : SoftSet -> Nat .
@@ -60,9 +60,9 @@ fmod PREDEF-VALUE-FUNCTIONS is
 
  op addUndefOne : Row -> Nat .
  eq addUndefOne(mtRow) = 0 .
- eq addUndefOne(0 R) = addUndefZero(R) .
- eq addUndefOne(1 R) = s(addUndefZero(R)) .
- eq addUndefOne(* R) = s(addUndefZero(R)) .
+ eq addUndefOne((0, R)) = addUndefZero(R) .
+ eq addUndefOne((1, R)) = s(addUndefZero(R)) .
+ eq addUndefOne((*, R)) = s(addUndefZero(R)) .
 
  *** Replaces * by 1 and adds up all values
  op undefSemi : SoftSet -> Nat .
@@ -144,8 +144,8 @@ fmod SS-STRAT{X :: SOFT-SET-FUN} is
  op allReachableTerms : Module Term Variable Nat TermList -> TermList .
  ceq allReachableTerms(M, T, V, N, TL) = TL
   if metaSearch(M, T, V, nil, '+, 1, N) == failure .
- ceq allReachableTerms(M, T, V, N, TL) = allReachableTerms(M, T, V, s(N), (TL, T))
-  if {T, Ty, SB} := metaSearch(M, T, V, nil, '+, 1, N) .
+ ceq allReachableTerms(M, T, V, N, TL) = allReachableTerms(M, T, V, s(N), (TL, T'))
+  if {T', Ty, SB} := metaSearch(M, T, V, nil, '+, 1, N) .
 
  op matrixFromTerms : TermList TermList -> SoftSet .
  eq matrixFromTerms(empty, ATTS) = mt .
@@ -158,7 +158,7 @@ fmod SS-STRAT{X :: SOFT-SET-FUN} is
 
  op $rowFromTerm : Term TermList -> Row .
  *** Attribute list
- eq $rowFromTerm('__[TL], ATTS) = $rowFromTerm*(TL, ATTS) .
+ eq $rowFromTerm('_`,_[TL], ATTS) = $rowFromTerm*(TL, ATTS) .
  eq $rowFromTerm(T, ATTS) = mtRow [owise] .
 
  op $rowFromTerm* : TermList TermList -> Row .
