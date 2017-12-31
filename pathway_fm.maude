@@ -20,7 +20,7 @@ endfm
 
 fmod PLE-COMMAND-PROCESSING is
  pr ALL-TOP .
- pr UNDEF-TO-ZERO .
+ pr UNDEF-TO-SEMI .
 
 endfm
 
@@ -183,6 +183,10 @@ set print attribute on .
 
 loop init-ple .
 
+eof
+
+*** Testing for soft sets
+
 (mod TEST is
  pr TGFB1RULES .
  pr TGFB1DISH .
@@ -197,12 +201,8 @@ loop init-ple .
  eq init = Tgfb1Dish atts .
 endm)
 
-(red Tgfb1Dish .)
-
 (ssrew init for cdc6 cdkn1a cdkn2b col1a1 col3a1 ctgf fn1 mmp2 pai1 smad6 smad7
      tgfb1 timp1 cst6 dst mmp9 mylk pthlh gfi1 csrp2 rorc  .)
-
-eof
 
 Result: PD(
 {CLc | Akt1 Atf2 Fak1 Jnks Mekk1 Mlk3 P38s Pml Smad2 Smad3 Tab1 Tab2 Tab3 Tak1 Traf6 Zfyve16[Abl1 - act][Erks - phos(TEY)]}
