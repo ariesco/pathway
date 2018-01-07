@@ -1,11 +1,55 @@
-fmod FINST is
+fmod TERM-SUBST is
  pr META-LEVEL .
 
+ sort TermSub .
+
+ op mtTS : -> TermSub [ctor] .
+ op _->_ : Term Term -> TermSub [ctor prec 30] .
+ op _._ : TermSub TermSub -> TermSub [ctor comm assoc id: mtTS] .
+
+ vars T T1 T2 : Term .
+ var  TL : TermList .
+ var  AtS : AttrSet .
+ var  C : Condition .
+ var  TS : TermSub .
+ var  Ty : Type .
+ var  Q : Qid .
+
+ op _[_] : Term TermSub -> Term .
+ eq T [ T -> T1 . TS] = T1 .
+ eq T [TS] = sub(T, TS) [owise] .
+
+ op sub : Term TermSub -> Term .
+ eq sub(Q[TL], TS) = Q[sub*(TL, TS)] .
+ eq sub(T, TS) = T [owise] .
+
+ op sub* : TermList TermSub -> TermList .
+ eq sub*(empty, TS) = empty .
+ eq sub*((T, TL), TS) = T[TS], sub*(TL, TS) .
+
+ op sub : Rule TermSub -> Rule .
+ eq sub(rl T1 => T2 [AtS] ., TS) = rl T1[TS] => T2[TS] [AtS] . .
+ eq sub(crl T1 => T2 if C [AtS] ., TS) = crl T1[TS] => T2[TS] if subCond(C, TS) [AtS] . .
+
+ op subCond : Condition TermSub -> Condition .
+ eq subCond(nil, TS) = nil .
+ eq subCond(T1 = T2 /\ C, TS) = T1[TS] = T2[TS] /\ subCond(C, TS) .
+ eq subCond(T1 := T2 /\ C, TS) = T1[TS] := T2[TS] /\ subCond(C, TS) .
+ eq subCond(T1 => T2 /\ C, TS) = T1[TS] => T2[TS] /\ subCond(C, TS) .
+ eq subCond(T : Ty /\ C, TS) = T[TS] : Ty /\ subCond(C, TS) .
+endfm
+
+fmod FINST is
+ pr TERM-SUBST .
+
  var  SSDS : SubsortDeclSet .
+ vars T T' T'' T1 T2 : Term .
  vars C C' C'' : Constant .
  var  EqS : EquationSet .
- vars  RS RS' : RuleSet .
+ vars TL TL' : TermList .
+ vars RS RS' : RuleSet .
  vars S S1 S2 : String .
+ var  COND : Condition .
  vars R R' R'' : Rule .
  var  ODS : OpDeclSet .
  var  IL : ImportList .
@@ -13,12 +57,13 @@ fmod FINST is
  var  TyL : TypeList .
  var  AtS : AttrSet .
  var  SS : SortSet .
+ var  TS : TermSub .
  var  M : Module .
  var  H : Header .
  var  Ty : Type .
  var  Q : Qid .
 
- op finst : Module -> Module .
+ op finst : SModule -> SModule .
  ceq finst(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
               mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm
   if RS' := finst(RS, ODS) .
@@ -29,12 +74,42 @@ fmod FINST is
  eq finst(RS, ODS) = RS [owise] .
 
  op join : Rule Rule OpDeclSet ~> Rule .
+ ceq join(R, R', ODS) = sub(R, TS)
+  if T := getLHS(R) /\
+     T' := getLHS(R') /\
+     TS := join(T, T', ODS) .
+
+ op join : Term Term OpDeclSet ~> TermSub .
+ eq join('PD[T], 'PD[T'], ODS) = $join(T, T', ODS) .
+ eq join(T, T', ODS) = $join(T, T', ODS) [owise] .
+
+ *** We assume we are working with soups of locations
+ op $join : Term Term OpDeclSet ~> TermSub .
+ eq $join('__[TL], '__[TL'], ODS) = $join*(TL, TL', ODS) .
+ eq $join('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
+             joinLocContents(T', T'', ODS) .
+
+ op joinLocContents : Term Term OpDeclSet ~> TermSub .
+ eq joinLocContents('__[TL], '__[TL'], ODS) = joinLocContents*(TL, TL', ODS) .
+ ceq joinLocContents('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T' -> C
+  if C := getFamily(ODS, T, T') .
+ eq joinLocContents(T, T', ODS) = mtTS [owise] .
+
+ op joinLocContents* : TermList TermList OpDeclSet ~> TermSub .
+ eq joinLocContents*(empty, empty, ODS) = mtTS .
+ eq joinLocContents*((T, TL), (T', TL'), ODS) = joinLocContents*(T, T', ODS) .
+                                                joinLocContents*(TL, TL', ODS) .
+
+ op $join* : TermList TermList OpDeclSet ~> TermSub .
+ eq $join*(empty, empty, ODS) = mtTS .
+ eq $join*((T, TL), (T', TL'), ODS) = $join(T, T', ODS) .
+                                      $join*(TL, TL', ODS) .
 
  op getFamily : Module Constant Constant ~> Constant .
  eq getFamily(M, C, C') = getFamily(getOps(M), C, C') .
 
  op getFamily : OpDeclSet Constant Constant ~> Constant .
- ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C''
+ ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C, C') = C''
   if S1 := string(getName(C)) /\
      find(S, S1, 0) =/= notFound /\
      S2 := string(getName(C')) /\
@@ -48,4 +123,8 @@ fmod FINST is
   if S1 := string(getName(C)) /\
      find(S, S1, 0) =/= notFound /\
      Q == getName(C') .
+
+ op getLHS : Rule -> Term .
+ eq getLHS(rl T => T' [AtS] .) = T .
+ eq getLHS(crl T => T' if COND [AtS] .) = T .
 endfm
