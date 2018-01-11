@@ -1,2 +1,4 @@
-# pathway
-An extension of Full Maude that includes a command (top MOD .) which transforms the module MOD by moving all its rules to the top.
+# Pathway FM, a Full Maude extension of Pathway logic
+
+This project presents different extensions of Pathway logic using Full Maude:
+* A top transformation (*all_top.maude*) for rules that
