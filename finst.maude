@@ -48,6 +48,7 @@ fmod FINST is
  var  EqS : EquationSet .
  vars TL TL' : TermList .
  vars RS RS' : RuleSet .
+ vars TS TS' : TermSub .
  vars S S1 S2 : String .
  var  COND : Condition .
  vars R R' R'' : Rule .
@@ -57,7 +58,6 @@ fmod FINST is
  var  TyL : TypeList .
  var  AtS : AttrSet .
  var  SS : SortSet .
- var  TS : TermSub .
  var  M : Module .
  var  H : Header .
  var  Ty : Type .
@@ -75,6 +75,18 @@ fmod FINST is
 
  op join : Rule Rule OpDeclSet ~> Rule .
  ceq join(R, R', ODS) = sub(R, TS)
+  if TS := joinLeft(R, R', ODS) /\
+     TS' := joinRight(R, R', ODS) /\
+     (TS =/= mtTS) or (TS' =/= mtTS) .
+
+ op joinRight : Rule Rule OpDeclSet ~> TermSub .
+ ceq joinRight(R, R', ODS) = TS
+  if T := getRHS(R) /\
+     T' := getRHS(R') /\
+     TS := join(T, T', ODS) . *** TODO
+
+ op joinLeft : Rule Rule OpDeclSet ~> TermSub .
+ ceq joinLeft(R, R', ODS) = TS
   if T := getLHS(R) /\
      T' := getLHS(R') /\
      TS := join(T, T', ODS) .
@@ -89,42 +101,79 @@ fmod FINST is
  eq $join('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
              joinLocContents(T', T'', ODS) .
 
- op joinLocContents : Term Term OpDeclSet ~> TermSub .
- eq joinLocContents('__[TL], '__[TL'], ODS) = joinLocContents*(TL, TL', ODS) .
- ceq joinLocContents('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T' -> C
-  if C := getFamily(ODS, T, T') .
- eq joinLocContents(T, T', ODS) = mtTS [owise] .
-
- op joinLocContents* : TermList TermList OpDeclSet ~> TermSub .
- eq joinLocContents*(empty, empty, ODS) = mtTS .
- eq joinLocContents*((T, TL), (T', TL'), ODS) = joinLocContents*(T, T', ODS) .
-                                                joinLocContents*(TL, TL', ODS) .
-
  op $join* : TermList TermList OpDeclSet ~> TermSub .
  eq $join*(empty, empty, ODS) = mtTS .
  eq $join*((T, TL), (T', TL'), ODS) = $join(T, T', ODS) .
                                       $join*(TL, TL', ODS) .
 
- op getFamily : Module Constant Constant ~> Constant .
- eq getFamily(M, C, C') = getFamily(getOps(M), C, C') .
+ op joinLocContents : Term Term OpDeclSet ~> TermSub .
+ eq joinLocContents('__[TL], '__[TL'], ODS) = joinLocContents*(TL, TL', ODS) .
+ ceq joinLocContents('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T1 -> C
+  if T =/= T1 /\
+     C := getFamily(ODS, T, T1) .
+ eq joinLocContents(T, T', ODS) = mtTS [owise] .
+
+ op joinLocContents* : TermList TermList OpDeclSet ~> TermSub .
+ eq joinLocContents*(empty, empty, ODS) = mtTS .
+ eq joinLocContents*((T, TL), (T', TL'), ODS) = joinLocContents(T, T', ODS) .
+                                                joinLocContents*(TL, TL', ODS) .
 
  op getFamily : OpDeclSet Constant Constant ~> Constant .
  ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C, C') = C''
-  if S1 := string(getName(C)) /\
+  if find(S, "type Family", 0) =/= notFound /\
+     S1 := string(getName(C)) /\
      find(S, S1, 0) =/= notFound /\
      S2 := string(getName(C')) /\
      find(S, S2, 0) =/= notFound /\
      C'' := qid(string(Q) + "." + string(Ty)) .
  ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C
-  if Q == getName(C) /\
+  if find(S, "type Family", 0) =/= notFound /\
+     Q == getName(C) /\
      S2 := string(getName(C')) /\
      find(S, S2, 0) =/= notFound .
  ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C'
-  if S1 := string(getName(C)) /\
+  if find(S, "type Family", 0) =/= notFound /\
+     S1 := string(getName(C)) /\
      find(S, S1, 0) =/= notFound /\
      Q == getName(C') .
 
  op getLHS : Rule -> Term .
  eq getLHS(rl T => T' [AtS] .) = T .
  eq getLHS(crl T => T' if COND [AtS] .) = T .
+
+ op getRHS : Rule -> Term .
+ eq getRHS(rl T => T' [AtS] .) = T' .
+ eq getRHS(crl T => T' if COND [AtS] .) = T' .
+
+ *** For testing purposes
+ op cleanRules : SModule -> SModule .
+ ceq cleanRules(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
+              mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm
+  if RS' := cleanRules(RS) .
+
+ op cleanRules : RuleSet -> RuleSet .
+ eq cleanRules(rl T => T' [AtS label('014a.Erk1.by.Mek1)] . RS) = rl T => T' [AtS label('014a.Erk1.by.Mek1)] .
+                                                                  cleanRules(RS) .
+ eq cleanRules(rl T => T' [AtS label('014b.Erk2.by.Mek1)] . RS) = rl T => T' [AtS label('014b.Erk2.by.Mek1)] .
+                                                                   cleanRules(RS) .
+ eq cleanRules(RS) = none [owise] .
 endfm
+
+set print conceal on .
+set print attribute on .
+
+red getRls(finst(cleanRules(upModule('QQ, true)))) .
+
+*** red finst(upModule('QQ, true)) .
+
+eof
+
+rl[014a.Erk1.by.Mek1]:
+{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2] }
+=>
+{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2 act phos(T 202) phos(Y 204)] } .
+
+rl[014b.Erk2.by.Mek1]:
+{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2] }
+=>
+{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2 act phos(T 185) phos(Y 187)] } .

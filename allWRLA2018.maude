@@ -1,0 +1,137 @@
+load ops/theops
+load ops/modificationops
+load ops/locationops
+load ops/chemicalops
+load ops/proteinops
+load ops/geneops
+load ops/siteops
+load ops/signatureops
+load ops/stressops
+******************************
+fmod ALLOPS is
+ inc CHEMICALOPS .
+ inc GENEOPS .
+ inc LOCATIONOPS .
+ inc MODIFICATIONOPS .
+ inc PROTEINOPS .
+ inc SIGNATUREOPS .
+ inc SITEOPS .
+ inc STRESSOPS .
+ inc THEOPS .
+endfm
+******************************
+*** ***  load CommonRules
+*** load rules/AdriamycinRules
+*** load rules/AnisoRules
+*** load rules/BleomycinRules
+*** load rules/Cd40Rules
+*** load rules/Csf1Rules
+*** load rules/EgfRules
+*** load rules/EtoposideRules
+*** *** load rules/HgfRules
+*** load rules/HydroxyureaRules
+*** load rules/IfnabRules
+*** load rules/IfngRules
+*** load rules/Igf1Rules
+*** load rules/IL1Rules
+*** load rules/IL2Rules
+*** load rules/IL4Rules
+*** load rules/IL6Rules
+*** load rules/IL12Rules
+*** load rules/IL22Rules
+*** load rules/InsRules
+*** load rules/IRadRules
+*** load rules/LpsRules
+*** load rules/NCSRules
+*** load rules/NgfRules
+*** load rules/PdgfRules
+*** load rules/PMARules
+*** load rules/PolyICRules
+*** load rules/SerumRules
+*** load rules/SorbitolRules
+load rules/Tgfb1Rules
+*** load rules/TLR9Rules
+*** load rules/TnfRules
+*** load rules/UVRules
+*** load rules/VegfRules
+*** *** load rules/TranslationRules
+******************************
+mod ALLRULES is
+*** *** inc COMMONRULES .
+*** inc ADRIAMYCINRULES .
+*** inc ANISORULES .
+*** inc BLEOMYCINRULES .
+*** inc CD40RULES .
+*** inc CSF1RULES .
+*** inc EGFRULES .
+*** inc ETOPOSIDERULES .
+*** ***  inc HGFRULES .
+*** inc HYDROXYUREARULES .
+*** inc IFNABRULES .
+*** inc IFNGRULES .
+*** inc IGF1RULES .
+*** inc IL1RULES .
+*** inc IL2RULES .
+*** inc IL4RULES .
+*** inc IL6RULES .
+*** inc IL12RULES .
+*** inc IL22RULES .
+*** inc INSRULES .
+*** inc IRADRULES .
+*** inc LPSRULES .
+*** inc NCSRULES .
+*** inc NGFRULES .
+*** inc PDGFRULES .
+*** inc PMARULES .
+*** inc POLYICRULES .
+*** inc SERUMRULES .
+*** inc SORBITOLRULES .
+inc TGFB1RULES .
+*** inc TLR9RULES .
+*** inc TNFRULES .
+*** inc UVRULES .
+*** inc VEGFRULES .
+*** *** inc TRANSLATIONRULES .
+endm
+******************************
+*** *** load model-checker
+*** *** load SDishes/Contents/CLmContents.maude
+*** *** load SDishes/Contents/CLiContents.maude
+*** *** load SDishes/Contents/CLcContents.maude
+*** *** load SDishes/Contents/NUcContents.maude
+***load SDishes/AnisoDish
+***load SDishes/AdriamycinDish
+***load SDishes/BleomycinDish
+***load SDishes/Cd40Dish
+***load SDishes/Csf1Dish
+***load SDishes/DrugDish
+***load SDishes/EgfDish
+***load SDishes/EtoposideDish
+*** *** load SDishes/HgfDish
+***load SDishes/HydroxyureaDish
+***load SDishes/IfnabDish
+***load SDishes/IfngDish
+***load SDishes/IGF1Dish
+***load SDishes/IL1Dish
+***load SDishes/IL2Dish
+***load SDishes/IL4Dish
+***load SDishes/IL6Dish
+***load SDishes/IL12Dish
+***load SDishes/IL22Dish
+***load SDishes/InsDish
+***load SDishes/IRadDish
+***load SDishes/LpsDish
+***load SDishes/NgfDish
+***load SDishes/NCSDish
+***load SDishes/PdgfDish
+***load SDishes/PMADish
+***load SDishes/PolyICDish
+***load SDishes/SerumDish
+***load SDishes/SorbitolDish
+load SDishes/Tgfb1Dish
+***load SDishes/TLR9Dish
+***load SDishes/TnfDish
+***load SDishes/VegfDish
+***load SDishes/UVDish
+***load SDishes/NoStimDish
+load qqWRLA2018.maude

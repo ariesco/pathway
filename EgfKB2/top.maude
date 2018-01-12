@@ -94,6 +94,8 @@ mod TOP-DATABASE-HANDLING is
      M2  := module2Top(M') /\
      DB1 := insertTopModule(ME, M1, DB') /\
      DB2 := insertFlatModule(ME, M2, DB1) .
+
+ op asd : Module -> QidList [ctor] .
 endm
 
 mod TOP is
