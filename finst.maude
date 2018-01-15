@@ -41,12 +41,13 @@ endfm
 
 fmod FINST is
  pr TERM-SUBST .
+ pr CONVERSION .
 
+ vars TL TL' TL'' : TermList .
  var  SSDS : SubsortDeclSet .
  vars T T' T'' T1 T2 : Term .
  vars C C' C'' : Constant .
  var  EqS : EquationSet .
- vars TL TL' : TermList .
  vars RS RS' : RuleSet .
  vars TS TS' : TermSub .
  vars S S1 S2 : String .
@@ -55,13 +56,15 @@ fmod FINST is
  var  ODS : OpDeclSet .
  var  IL : ImportList .
  var  MAS : MembAxSet .
+ vars V V' : Variable .
  var  TyL : TypeList .
  var  AtS : AttrSet .
  var  SS : SortSet .
  var  M : Module .
  var  H : Header .
+ vars Q Q' : Qid .
+ vars N N' : Nat .
  var  Ty : Type .
- var  Q : Qid .
 
  op finst : SModule -> SModule .
  ceq finst(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
@@ -74,16 +77,10 @@ fmod FINST is
  eq finst(RS, ODS) = RS [owise] .
 
  op join : Rule Rule OpDeclSet ~> Rule .
- ceq join(R, R', ODS) = sub(R, TS)
+ ceq join(R, R', ODS) = simplify(sub(R, TS'))
   if TS := joinLeft(R, R', ODS) /\
-     TS' := joinRight(R, R', ODS) /\
+     TS' := joinRight(sub(R, TS), sub(R', TS), ODS) /\
      (TS =/= mtTS) or (TS' =/= mtTS) .
-
- op joinRight : Rule Rule OpDeclSet ~> TermSub .
- ceq joinRight(R, R', ODS) = TS
-  if T := getRHS(R) /\
-     T' := getRHS(R') /\
-     TS := join(T, T', ODS) . *** TODO
 
  op joinLeft : Rule Rule OpDeclSet ~> TermSub .
  ceq joinLeft(R, R', ODS) = TS
@@ -91,11 +88,71 @@ fmod FINST is
      T' := getLHS(R') /\
      TS := join(T, T', ODS) .
 
+ op joinRight : Rule Rule OpDeclSet ~> TermSub .
+ ceq joinRight(R, R', ODS) = TS
+  if T := getRHS(R) /\
+     T' := getRHS(R') /\
+     TS := backwards(T, T', ODS) .
+
+ op backwards : Term Term OpDeclSet ~> TermSub .
+ eq backwards('PD[T], 'PD[T'], ODS) = $backwards(T, T', ODS) .
+ eq backwards(T, T', ODS) = $backwards(T, T', ODS) [owise] .
+
+ op $backwards : Term Term OpDeclSet ~> TermSub .
+ eq $backwards('__[TL], '__[TL'], ODS) = $backwards*(TL, TL', ODS) .
+ eq $backwards('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
+             backwardsContents(T', T'', ODS) .
+
+ op $backwards* : TermList TermList OpDeclSet ~> TermSub .
+ eq $backwards*(empty, empty, ODS) = mtTS .
+ eq $backwards*((T, TL), (T', TL'), ODS) = $join(T, T', ODS) .
+                                      $join*(TL, TL', ODS) .
+
+ op backwardsContents : Term Term OpDeclSet ~> TermSub .
+ eq backwardsContents('__[TL], '__[TL'], ODS) = backwardsContents*(TL, TL', ODS) .
+ eq backwardsContents('`[_-_`][T, T'], '`[_-_`][T, T1], ODS) = getEpitopes(ODS, T', T1) .
+ eq backwardsContents(T, T', ODS) = mtTS [owise] .
+
+ op getEpitopes : OpDeclSet Term Term ~> TermSub .
+ eq getEpitopes(ODS, '__[TL], '__[TL']) = getEpitopes*(ODS, TL, TL') .
+ eq getEpitopes(ODS, V, V') = mtTS .
+ eq getEpitopes(ODS, C, C') = mtTS .
+ eq getEpitopes(ODS, T, T') = sameEpitope(ODS, T, T') [owise] .
+
+ op getEpitopes* : OpDeclSet TermList TermList ~> TermSub .
+ eq getEpitopes*(ODS, empty, empty) = mtTS .
+ eq getEpitopes*(ODS, (T, TL), (T', TL')) = getEpitopes(ODS, T, T') .
+                                            getEpitopes*(ODS, TL, TL') .
+
+ op sameEpitope : OpDeclSet Term Term ~> TermSub .
+ ceq sameEpitope(op Q : TyL -> Ty [metadata(S) AtS] . ODS, Q'[TL], Q'[TL']) =
+                                             (Q'[TL]) -> (Q'[C]) . (Q'[TL']) -> (Q'[C])
+  if find(S, "epitopes", 0) =/= notFound /\
+     S1 := getString(TL) /\
+     find(S, S1, 0) =/= notFound /\
+     S2 := getString(TL') /\
+     find(S, S2, 0) =/= notFound /\
+     C := qid(string(Q) + "." + string(Ty)) .
+
+ op getString : Term ~> String .
+ eq getString('__[TL]) = getString*(TL) .
+ eq getString(C) = string(getName(C)) .
+ ceq getString(T) = string(N, 10)
+  if N := downTerm(T, 0) [owise] .
+
+ op getString* : TermList ~> String .
+ eq getString*((T, TL)) = getString(T) + getString*(TL) .
+ eq getString*(empty) = "" .
+
+ op backwardsContents* : TermList TermList OpDeclSet ~> TermSub .
+ eq backwardsContents*(empty, empty, ODS) = mtTS .
+ eq backwardsContents*((T, TL), (T', TL'), ODS) = backwardsContents(T, T', ODS) .
+                                                  backwardsContents*(TL, TL', ODS) .
+
  op join : Term Term OpDeclSet ~> TermSub .
  eq join('PD[T], 'PD[T'], ODS) = $join(T, T', ODS) .
  eq join(T, T', ODS) = $join(T, T', ODS) [owise] .
 
- *** We assume we are working with soups of locations
  op $join : Term Term OpDeclSet ~> TermSub .
  eq $join('__[TL], '__[TL'], ODS) = $join*(TL, TL', ODS) .
  eq $join('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
@@ -145,35 +202,21 @@ fmod FINST is
  eq getRHS(rl T => T' [AtS] .) = T' .
  eq getRHS(crl T => T' if COND [AtS] .) = T' .
 
- *** For testing purposes
- op cleanRules : SModule -> SModule .
- ceq cleanRules(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
-              mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm
-  if RS' := cleanRules(RS) .
+ op simplify : Rule -> Rule .
+ eq simplify(rl T => T' [AtS] .) = rl simplify(T) => simplify(T') [AtS] . .
+ eq simplify(crl T => T' if COND [AtS] .) = crl simplify(T) => simplify(T') if COND [AtS] . .
 
- op cleanRules : RuleSet -> RuleSet .
- eq cleanRules(rl T => T' [AtS label('014a.Erk1.by.Mek1)] . RS) = rl T => T' [AtS label('014a.Erk1.by.Mek1)] .
-                                                                  cleanRules(RS) .
- eq cleanRules(rl T => T' [AtS label('014b.Erk2.by.Mek1)] . RS) = rl T => T' [AtS label('014b.Erk2.by.Mek1)] .
-                                                                   cleanRules(RS) .
- eq cleanRules(RS) = none [owise] .
+ op simplify : Term -> Term .
+ eq simplify(C) = C .
+ eq simplify(V) = V .
+ eq simplify(Q[TL]) = Q[simplify*(remove(TL))] .
+
+ op simplify* : TermList -> TermList .
+ eq simplify*(empty) = empty .
+ eq simplify*((T, TL)) = simplify(T), simplify*(TL) .
+
+ op remove : TermList -> TermList .
+ eq remove((TL, T, TL', T, TL'')) = remove((TL, T, TL', TL'')) .
+ eq remove(TL) = TL [owise] .
 endfm
 
-set print conceal on .
-set print attribute on .
-
-red getRls(finst(cleanRules(upModule('QQ, true)))) .
-
-*** red finst(upModule('QQ, true)) .
-
-eof
-
-rl[014a.Erk1.by.Mek1]:
-{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2] }
-=>
-{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2 act phos(T 202) phos(Y 204)] } .
-
-rl[014b.Erk2.by.Mek1]:
-{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2] }
-=>
-{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2 act phos(T 185) phos(Y 187)] } .

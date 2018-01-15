@@ -1,0 +1,39 @@
+load ../finst.maude
+
+mod FINST-TEST is
+ pr FINST .
+
+ op cleanRules : SModule -> SModule .
+ ceq cleanRules(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
+              mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm
+  if RS' := cleanRules(RS) .
+
+ op cleanRules : RuleSet -> RuleSet .
+ eq cleanRules(rl T => T' [AtS label('014a.Erk1.by.Mek1)] . RS) = rl T => T' [AtS label('014a.Erk1.by.Mek1)] .
+                                                                  cleanRules(RS) .
+ eq cleanRules(rl T => T' [AtS label('014b.Erk2.by.Mek1)] . RS) = rl T => T' [AtS label('014b.Erk2.by.Mek1)] .
+                                                                   cleanRules(RS) .
+ eq cleanRules(RS) = none [owise] .
+endm
+
+set print conceal on .
+set print attribute on .
+
+*** Requires to load allWrla18.maude first
+red getRls(finst(cleanRules(upModule('QQ, true)))) .
+
+*** red getOps(upModule('QQ, true)) .
+
+*** red finst(upModule('QQ, true)) .
+
+eof
+
+rl[014a.Erk1.by.Mek1]:
+{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2] }
+=>
+{CLc | clc [Mek1 - ms1 act] [Erk1 - ms2 act phos(T 202) phos(Y 204)] } .
+
+rl[014b.Erk2.by.Mek1]:
+{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2] }
+=>
+{CLc | clc [Mek1 - ms1 act] [Erk2 - ms2 act phos(T 185) phos(Y 187)] } .
