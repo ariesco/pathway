@@ -73,23 +73,23 @@ fmod FINST is
 
  op finst : RuleSet OpDeclSet -> RuleSet .
  ceq finst(R R' RS, ODS) = finst(R'' RS, ODS)
-  if R'' := join(R, R', ODS) .
+  if R'' := finst(R, R', ODS) .
  eq finst(RS, ODS) = RS [owise] .
 
- op join : Rule Rule OpDeclSet ~> Rule .
- ceq join(R, R', ODS) = simplify(sub(R, TS'))
-  if TS := joinLeft(R, R', ODS) /\
-     TS' := joinRight(sub(R, TS), sub(R', TS), ODS) /\
+ op finst : Rule Rule OpDeclSet ~> Rule .
+ ceq finst(R, R', ODS) = simplify(sub(R, TS'))
+  if TS := forwards(R, R', ODS) /\
+     TS' := backwards(sub(R, TS), sub(R', TS), ODS) /\
      (TS =/= mtTS) or (TS' =/= mtTS) .
 
- op joinLeft : Rule Rule OpDeclSet ~> TermSub .
- ceq joinLeft(R, R', ODS) = TS
+ op forwards : Rule Rule OpDeclSet ~> TermSub .
+ ceq forwards(R, R', ODS) = TS
   if T := getLHS(R) /\
      T' := getLHS(R') /\
-     TS := join(T, T', ODS) .
+     TS := forwards(T, T', ODS) .
 
- op joinRight : Rule Rule OpDeclSet ~> TermSub .
- ceq joinRight(R, R', ODS) = TS
+ op backwards : Rule Rule OpDeclSet ~> TermSub .
+ ceq backwards(R, R', ODS) = TS
   if T := getRHS(R) /\
      T' := getRHS(R') /\
      TS := backwards(T, T', ODS) .
@@ -105,8 +105,8 @@ fmod FINST is
 
  op $backwards* : TermList TermList OpDeclSet ~> TermSub .
  eq $backwards*(empty, empty, ODS) = mtTS .
- eq $backwards*((T, TL), (T', TL'), ODS) = $join(T, T', ODS) .
-                                      $join*(TL, TL', ODS) .
+ eq $backwards*((T, TL), (T', TL'), ODS) = $forwards(T, T', ODS) .
+                                           $forwards*(TL, TL', ODS) .
 
  op backwardsContents : Term Term OpDeclSet ~> TermSub .
  eq backwardsContents('__[TL], '__[TL'], ODS) = backwardsContents*(TL, TL', ODS) .
@@ -149,31 +149,31 @@ fmod FINST is
  eq backwardsContents*((T, TL), (T', TL'), ODS) = backwardsContents(T, T', ODS) .
                                                   backwardsContents*(TL, TL', ODS) .
 
- op join : Term Term OpDeclSet ~> TermSub .
- eq join('PD[T], 'PD[T'], ODS) = $join(T, T', ODS) .
- eq join(T, T', ODS) = $join(T, T', ODS) [owise] .
+ op forwards : Term Term OpDeclSet ~> TermSub .
+ eq forwards('PD[T], 'PD[T'], ODS) = $forwards(T, T', ODS) .
+ eq forwards(T, T', ODS) = $forwards(T, T', ODS) [owise] .
 
- op $join : Term Term OpDeclSet ~> TermSub .
- eq $join('__[TL], '__[TL'], ODS) = $join*(TL, TL', ODS) .
- eq $join('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
-             joinLocContents(T', T'', ODS) .
+ op $forwards : Term Term OpDeclSet ~> TermSub .
+ eq $forwards('__[TL], '__[TL'], ODS) = $forwards*(TL, TL', ODS) .
+ eq $forwards('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
+             joinForwards(T', T'', ODS) .
 
- op $join* : TermList TermList OpDeclSet ~> TermSub .
- eq $join*(empty, empty, ODS) = mtTS .
- eq $join*((T, TL), (T', TL'), ODS) = $join(T, T', ODS) .
-                                      $join*(TL, TL', ODS) .
+ op $forwards* : TermList TermList OpDeclSet ~> TermSub .
+ eq $forwards*(empty, empty, ODS) = mtTS .
+ eq $forwards*((T, TL), (T', TL'), ODS) = $forwards(T, T', ODS) .
+                                          $forwards*(TL, TL', ODS) .
 
- op joinLocContents : Term Term OpDeclSet ~> TermSub .
- eq joinLocContents('__[TL], '__[TL'], ODS) = joinLocContents*(TL, TL', ODS) .
- ceq joinLocContents('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T1 -> C
+ op joinForwards : Term Term OpDeclSet ~> TermSub .
+ eq joinForwards('__[TL], '__[TL'], ODS) = joinForwards*(TL, TL', ODS) .
+ ceq joinForwards('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T1 -> C
   if T =/= T1 /\
      C := getFamily(ODS, T, T1) .
- eq joinLocContents(T, T', ODS) = mtTS [owise] .
+ eq joinForwards(T, T', ODS) = mtTS [owise] .
 
- op joinLocContents* : TermList TermList OpDeclSet ~> TermSub .
- eq joinLocContents*(empty, empty, ODS) = mtTS .
- eq joinLocContents*((T, TL), (T', TL'), ODS) = joinLocContents(T, T', ODS) .
-                                                joinLocContents*(TL, TL', ODS) .
+ op joinForwards* : TermList TermList OpDeclSet ~> TermSub .
+ eq joinForwards*(empty, empty, ODS) = mtTS .
+ eq joinForwards*((T, TL), (T', TL'), ODS) = joinForwards(T, T', ODS) .
+                                             joinForwards*(TL, TL', ODS) .
 
  op getFamily : OpDeclSet Constant Constant ~> Constant .
  ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C, C') = C''

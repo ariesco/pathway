@@ -3,6 +3,17 @@ load ../finst.maude
 mod FINST-TEST is
  pr FINST .
 
+ var  SSDS : SubsortDeclSet .
+ var  EqS : EquationSet .
+ vars RS RS' : RuleSet .
+ var  IL : ImportList .
+ var  ODS : OpDeclSet .
+ var  MAS : MembAxSet .
+ var  AtS : AttrSet .
+ var  SS : SortSet .
+ vars T T' : Term .
+ var  H : Header .
+
  op cleanRules : SModule -> SModule .
  ceq cleanRules(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) =
               mod H is IL sorts SS . SSDS ODS MAS EqS RS' endm

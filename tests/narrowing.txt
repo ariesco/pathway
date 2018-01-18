@@ -1,0 +1,105 @@
+
+
+Last login: Thu Apr 28 19:08:10 on console
+~$ cd /Users/santos/Documents/maude/pla/PLA/Models/SmallKB2
+SmallKB2$ maude all
+		     \||||||||||||||||||/
+		   --- Welcome to Maude ---
+		     /||||||||||||||||||\
+	    Maude 2.7 built: Mar  3 2014 18:07:27
+	    Copyright 1997-2014 SRI International
+		   Fri Apr 29 08:44:16 2016
+Maude> load full-maude
+
+	    Full Maude 2.7 March 10th 2015
+
+Maude> (red in QQ : allDish .)
+reduce in QQ :
+  allDish
+result Dish :
+  PD(
+{CLc | Gab1 Gab2 Grb2 Pi3k RasGrp3 Shp2 Sos1}
+{CLi | Gnai1 Gnai3 Src[Hras - GDP]}
+{EgfRC | EgfR}
+{XOut | Egf})
+
+Maude> (rew [1] in QQ : allDish .)
+rewrite in QQ :
+  allDish
+result Dish :
+  PD(
+{CLc | Gab1 Gab2 Grb2 Pi3k RasGrp3 Shp2 Sos1}
+{CLi | Gnai1 Gnai3 Src[Hras - GDP]}
+{EgfRC | Egf :[EgfR - Yphos]}
+{XOut | empty})
+
+Maude> (rew [10] in QQ : allDish .)
+rewrite in QQ :
+  allDish
+result Dish :
+  PD(
+{CLc | Gab1 RasGrp3}
+{CLi |[Hras - GTP]}
+{EgfRC | Gnai1 Gnai3 Grb2 Pi3k(Egf :[EgfR - Yphos])[Gab2 - Yphos][Shp2 -
+    Yphos][Sos1 - Yphos][Src - act]}
+{XOut | empty})
+
+
+
+(search [1] in QQ : allDish  =>*  D:Dish .)
+
+(search [1] in QQ : allDish  =>*  PD( L:Locations  { NUc | T1:Things [T1':Thing - act] }  )  .)
+
+(search [1] in QQ : allDish  =>*  PD( L:Locations  { C:CompName | T1:Things [T1':Thing - act] }  )  .)
+
+(search in QQ : allDish  =>*  PD( L:Locations  { C:CompName | T1:Things [T1':Thing - act] }  )  .)
+
+
+(search in QQ :
+  PD(
+{CLc | Gab1 Gab2 Grb2 Pi3k RasGrp3 Shp2 Sos1}
+{CLi | Gnai1 Gnai3 Src[Hras - GDP]}
+{EgfRC | EgfR}
+{XOut | Egf})
+=>*
+PD({CLc | Gab1 RasGrp3}
+{CLi |[T1':Thing - GTP] }
+L':Locations )
+.)
+
+*** Adrian
+
+(top RULES .)
+
+(search [3] in RULES : PD(L:Locations)  ~>*
+PD(
+  {EgfRC | egfrc':Things ([EgfR - Yphos] : Egf) }
+  L':Locations) .)
+
+rl[001.EgfR.irt.Egf]:
+  PD(
+  {XOut  | xout Egf                     }
+  {EgfRC | egfrc EgfR                   }
+  L:Locations)
+  =>
+  PD(
+  {XOut  | xout                         }
+  {EgfRC | egfrc ([EgfR - Yphos] : Egf) }
+  L:Locations) .
+
+(red in QQ :
+{XOut  | xout:Soup Egf                     }
+{EgfRC | egfrc:Soup EgfR                   }
+.)
+
+
+(search [2] in RULES : PD(L:Locations)  ~>*
+PD(
+{CLo | empty}
+{EgfRC | Grb2 Pi3k [Fak2 - act] [Gab2 - Yphos] [Git1 - Yphos] [Ptk6 - act] [Pxn - Yphos] [Shc1 - Yphos] [Shp2 - Yphos] [Sos1 - Yphos] [Src - act] [EgfR - Yphos] : Egf}
+{XOut | empty}
+{CLm | Erbb2 Pag1 Plscr1}
+{CLi | Gnai1 Gnai3 Pld1 Pld2 [Cdc42 - GDP] [Hras - GTP] [Kras - GDP] [Nras - GDP] [Rac1 - GTP] [Rala - GDP] [Rit1 - GDP]}
+{CLc | Abl1 Akt1 Araf Cbl Cblb Crk CrkL Csk Dbl Erk5 Fak1 Gab1 Hpk1 IqGap1 Jak1 Jak2 Jnks Lkb1 Mek5 Mekk1 Mekk2 Mekk3 Nckipsd P38s Pdpk1 Pkcd Raf1 RapGef1 Rsk1
+    Shoc2 Sin1 Smad3 Stat1 Stat3 (Mlst8 : Mtor : Raptor) [Braf - act] [Gsk3s - act] [Mlk3 - act] [Mek1 - act]}
+{NUc | Atf1 Creb1 Elk1 Fos HistH3 Ipo7 Jun Msk1 Msk2 Myc [Erks - phos(TEY) phos(SPS) act]}) .)
