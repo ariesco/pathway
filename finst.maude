@@ -72,67 +72,64 @@ fmod FINST is
   if RS' := finst(RS, ODS) .
 
  op finst : RuleSet OpDeclSet -> RuleSet .
- ceq finst(R R' RS, ODS) = finst(R'' RS, ODS)
-  if R'' := finst(R, R', ODS) .
- eq finst(RS, ODS) = RS [owise] .
+ eq finst(none, ODS) = none .
+ ceq finst(R RS, ODS) = R' finst(RS, ODS)
+  if R' := finstRule(R, ODS) .
 
- op finst : Rule Rule OpDeclSet ~> Rule .
- ceq finst(R, R', ODS) = simplify(sub(R, TS'))
-  if TS := forwards(R, R', ODS) /\
-     TS' := backwards(sub(R, TS), sub(R', TS), ODS) /\
-     (TS =/= mtTS) or (TS' =/= mtTS) .
+ op finstRule : Rule OpDeclSet -> Rule .
+ ceq finstRule(R, ODS) = simplify(sub(R, TS . TS'))
+  if TS := forwards(R, ODS) /\
+     TS' := backwards(sub(R, TS), ODS) [print TS " y " TS'] .
+ eq finstRule(R, ODS) = R [owise] .
 
- op forwards : Rule Rule OpDeclSet ~> TermSub .
- ceq forwards(R, R', ODS) = TS
+ op forwards : Rule OpDeclSet -> TermSub .
+ ceq forwards(R, ODS) = TS
   if T := getLHS(R) /\
-     T' := getLHS(R') /\
-     TS := forwards(T, T', ODS) .
+     TS := forwards(T, ODS) .
 
- op backwards : Rule Rule OpDeclSet ~> TermSub .
- ceq backwards(R, R', ODS) = TS
+ op backwards : Rule OpDeclSet -> TermSub .
+ ceq backwards(R, ODS) = TS
   if T := getRHS(R) /\
-     T' := getRHS(R') /\
-     TS := backwards(T, T', ODS) .
+     TS := backwards(T, ODS) .
 
- op backwards : Term Term OpDeclSet ~> TermSub .
- eq backwards('PD[T], 'PD[T'], ODS) = $backwards(T, T', ODS) .
- eq backwards(T, T', ODS) = $backwards(T, T', ODS) [owise] .
+ op backwards : Term OpDeclSet -> TermSub .
+ eq backwards('PD[T], ODS) = $backwards(T, ODS) .
+ eq backwards(T, ODS) = $backwards(T, ODS) [owise] .
 
- op $backwards : Term Term OpDeclSet ~> TermSub .
- eq $backwards('__[TL], '__[TL'], ODS) = $backwards*(TL, TL', ODS) .
- eq $backwards('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
-             backwardsContents(T', T'', ODS) .
+ op $backwards : Term OpDeclSet -> TermSub .
+ eq $backwards('__[TL], ODS) = $backwards*(TL, ODS) .
+ eq $backwards('`{_|_`}[T, T'], ODS) =
+             backwardsContents(T', ODS) .
 
- op $backwards* : TermList TermList OpDeclSet ~> TermSub .
- eq $backwards*(empty, empty, ODS) = mtTS .
- eq $backwards*((T, TL), (T', TL'), ODS) = $forwards(T, T', ODS) .
-                                           $forwards*(TL, TL', ODS) .
+ op $backwards* : TermList OpDeclSet -> TermSub .
+ eq $backwards*(empty, ODS) = mtTS .
+ eq $backwards*((T, TL), ODS) = $backwards(T, ODS) .
+                                $backwards*(TL, ODS) .
 
- op backwardsContents : Term Term OpDeclSet ~> TermSub .
- eq backwardsContents('__[TL], '__[TL'], ODS) = backwardsContents*(TL, TL', ODS) .
- eq backwardsContents('`[_-_`][T, T'], '`[_-_`][T, T1], ODS) = getEpitopes(ODS, T', T1) .
- eq backwardsContents(T, T', ODS) = mtTS [owise] .
+ op backwardsContents : Term OpDeclSet -> TermSub .
+ eq backwardsContents('__[TL], ODS) = backwardsContents*(TL, ODS) .
+ eq backwardsContents('`[_-_`][T, T'], ODS) = getEpitopes(ODS, T') .
+ eq backwardsContents(T, ODS) = mtTS [owise] .
 
- op getEpitopes : OpDeclSet Term Term ~> TermSub .
- eq getEpitopes(ODS, '__[TL], '__[TL']) = getEpitopes*(ODS, TL, TL') .
- eq getEpitopes(ODS, V, V') = mtTS .
- eq getEpitopes(ODS, C, C') = mtTS .
- eq getEpitopes(ODS, T, T') = sameEpitope(ODS, T, T') [owise] .
+ op getEpitopes : OpDeclSet Term -> TermSub .
+ eq getEpitopes(ODS, '__[TL]) = getEpitopes*(ODS, TL) .
+ eq getEpitopes(ODS, V) = mtTS .
+ eq getEpitopes(ODS, C) = mtTS .
+ eq getEpitopes(ODS, T) = sameEpitope(ODS, T) [owise] .
 
- op getEpitopes* : OpDeclSet TermList TermList ~> TermSub .
- eq getEpitopes*(ODS, empty, empty) = mtTS .
- eq getEpitopes*(ODS, (T, TL), (T', TL')) = getEpitopes(ODS, T, T') .
-                                            getEpitopes*(ODS, TL, TL') .
+ op getEpitopes* : OpDeclSet TermList -> TermSub .
+ eq getEpitopes*(ODS, empty) = mtTS .
+ eq getEpitopes*(ODS, (T, TL)) = getEpitopes(ODS, T) .
+                                 getEpitopes*(ODS, TL) .
 
- op sameEpitope : OpDeclSet Term Term ~> TermSub .
- ceq sameEpitope(op Q : TyL -> Ty [metadata(S) AtS] . ODS, Q'[TL], Q'[TL']) =
-                                             (Q'[TL]) -> (Q'[C]) . (Q'[TL']) -> (Q'[C])
+ op sameEpitope : OpDeclSet Term -> TermSub .
+ ceq sameEpitope(op Q : TyL -> Ty [metadata(S) AtS] . ODS, Q'[TL]) =
+                                             (Q'[TL]) -> (Q'[C])
   if find(S, "epitopes", 0) =/= notFound /\
      S1 := getString(TL) /\
      find(S, S1, 0) =/= notFound /\
-     S2 := getString(TL') /\
-     find(S, S2, 0) =/= notFound /\
      C := qid(string(Q) + "." + string(Ty)) .
+ eq sameEpitope(ODS, T) = mtTS [owise] .
 
  op getString : Term ~> String .
  eq getString('__[TL]) = getString*(TL) .
@@ -144,55 +141,42 @@ fmod FINST is
  eq getString*((T, TL)) = getString(T) + getString*(TL) .
  eq getString*(empty) = "" .
 
- op backwardsContents* : TermList TermList OpDeclSet ~> TermSub .
- eq backwardsContents*(empty, empty, ODS) = mtTS .
- eq backwardsContents*((T, TL), (T', TL'), ODS) = backwardsContents(T, T', ODS) .
-                                                  backwardsContents*(TL, TL', ODS) .
+ op backwardsContents* : TermList OpDeclSet -> TermSub .
+ eq backwardsContents*(empty, ODS) = mtTS .
+ eq backwardsContents*((T, TL),  ODS) = backwardsContents(T, ODS) .
+                                        backwardsContents*(TL, ODS) .
 
- op forwards : Term Term OpDeclSet ~> TermSub .
- eq forwards('PD[T], 'PD[T'], ODS) = $forwards(T, T', ODS) .
- eq forwards(T, T', ODS) = $forwards(T, T', ODS) [owise] .
+ op forwards : Term OpDeclSet -> TermSub .
+ eq forwards('PD[T], ODS) = $forwards(T, ODS) .
+ eq forwards(T, ODS) = $forwards(T,  ODS) [owise] .
 
- op $forwards : Term Term OpDeclSet ~> TermSub .
- eq $forwards('__[TL], '__[TL'], ODS) = $forwards*(TL, TL', ODS) .
- eq $forwards('`{_|_`}[T, T'], '`{_|_`}[T, T''], ODS) =
-             joinForwards(T', T'', ODS) .
+ op $forwards : Term OpDeclSet -> TermSub .
+ eq $forwards('__[TL], ODS) = $forwards*(TL, ODS) .
+ eq $forwards('`{_|_`}[T, T'], ODS) =
+             joinForwards(T', ODS) .
 
- op $forwards* : TermList TermList OpDeclSet ~> TermSub .
- eq $forwards*(empty, empty, ODS) = mtTS .
- eq $forwards*((T, TL), (T', TL'), ODS) = $forwards(T, T', ODS) .
-                                          $forwards*(TL, TL', ODS) .
+ op $forwards* : TermList OpDeclSet -> TermSub .
+ eq $forwards*(empty, ODS) = mtTS .
+ eq $forwards*((T, TL), ODS) = $forwards(T, ODS) .
+                               $forwards*(TL, ODS) .
 
- op joinForwards : Term Term OpDeclSet ~> TermSub .
- eq joinForwards('__[TL], '__[TL'], ODS) = joinForwards*(TL, TL', ODS) .
- ceq joinForwards('`[_-_`][T, T'], '`[_-_`][T1, T2], ODS) = T -> C . T1 -> C
-  if T =/= T1 /\
-     C := getFamily(ODS, T, T1) .
- eq joinForwards(T, T', ODS) = mtTS [owise] .
+ op joinForwards : Term OpDeclSet -> TermSub .
+ eq joinForwards('__[TL], ODS) = joinForwards*(TL, ODS) .
+ ceq joinForwards('`[_-_`][T, T'], ODS) = T -> C
+  if C := getFamily(ODS, T) .
+ eq joinForwards(T, ODS) = mtTS [owise] .
 
- op joinForwards* : TermList TermList OpDeclSet ~> TermSub .
- eq joinForwards*(empty, empty, ODS) = mtTS .
- eq joinForwards*((T, TL), (T', TL'), ODS) = joinForwards(T, T', ODS) .
-                                             joinForwards*(TL, TL', ODS) .
+ op joinForwards* : TermList OpDeclSet -> TermSub .
+ eq joinForwards*(empty, ODS) = mtTS .
+ eq joinForwards*((T, TL), ODS) = joinForwards(T, ODS) .
+                                  joinForwards*(TL, ODS) .
 
- op getFamily : OpDeclSet Constant Constant ~> Constant .
- ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C, C') = C''
+ op getFamily : OpDeclSet Constant ~> Constant .
+ ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C) = C'
   if find(S, "type Family", 0) =/= notFound /\
      S1 := string(getName(C)) /\
      find(S, S1, 0) =/= notFound /\
-     S2 := string(getName(C')) /\
-     find(S, S2, 0) =/= notFound /\
-     C'' := qid(string(Q) + "." + string(Ty)) .
- ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C
-  if find(S, "type Family", 0) =/= notFound /\
-     Q == getName(C) /\
-     S2 := string(getName(C')) /\
-     find(S, S2, 0) =/= notFound .
- ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS , C, C') = C'
-  if find(S, "type Family", 0) =/= notFound /\
-     S1 := string(getName(C)) /\
-     find(S, S1, 0) =/= notFound /\
-     Q == getName(C') .
+     C' := qid(string(Q) + "." + string(Ty)) .
 
  op getLHS : Rule -> Term .
  eq getLHS(rl T => T' [AtS] .) = T .
