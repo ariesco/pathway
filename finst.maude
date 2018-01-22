@@ -79,7 +79,7 @@ fmod FINST is
  op finstRule : Rule OpDeclSet -> Rule .
  ceq finstRule(R, ODS) = simplify(sub(R, TS . TS'))
   if TS := forwards(R, ODS) /\
-     TS' := backwards(sub(R, TS), ODS) [print TS " y " TS'] .
+     TS' := backwards(sub(R, TS), ODS) .
  eq finstRule(R, ODS) = R [owise] .
 
  op forwards : Rule OpDeclSet -> TermSub .
@@ -153,29 +153,29 @@ fmod FINST is
  op $forwards : Term OpDeclSet -> TermSub .
  eq $forwards('__[TL], ODS) = $forwards*(TL, ODS) .
  eq $forwards('`{_|_`}[T, T'], ODS) =
-             joinForwards(T', ODS) .
+             substForwards(T', ODS) .
 
  op $forwards* : TermList OpDeclSet -> TermSub .
  eq $forwards*(empty, ODS) = mtTS .
  eq $forwards*((T, TL), ODS) = $forwards(T, ODS) .
                                $forwards*(TL, ODS) .
 
- op joinForwards : Term OpDeclSet -> TermSub .
- eq joinForwards('__[TL], ODS) = joinForwards*(TL, ODS) .
- ceq joinForwards('`[_-_`][T, T'], ODS) = T -> C
+ op substForwards : Term OpDeclSet -> TermSub .
+ eq substForwards('__[TL], ODS) = substForwards*(TL, ODS) .
+ ceq substForwards('`[_-_`][T, T'], ODS) = T -> C
   if C := getFamily(ODS, T) .
- eq joinForwards(T, ODS) = mtTS [owise] .
+ eq substForwards(T, ODS) = mtTS [owise] .
 
- op joinForwards* : TermList OpDeclSet -> TermSub .
- eq joinForwards*(empty, ODS) = mtTS .
- eq joinForwards*((T, TL), ODS) = joinForwards(T, ODS) .
-                                  joinForwards*(TL, ODS) .
+ op substForwards* : TermList OpDeclSet -> TermSub .
+ eq substForwards*(empty, ODS) = mtTS .
+ eq substForwards*((T, TL), ODS) = substForwards(T, ODS) .
+                                   substForwards*(TL, ODS) .
 
  op getFamily : OpDeclSet Constant ~> Constant .
  ceq getFamily(op Q : TyL -> Ty [metadata(S) AtS] . ODS, C) = C'
-  if find(S, "type Family", 0) =/= notFound /\
+  if N := find(S, "type Family", 0) /\
      S1 := string(getName(C)) /\
-     find(S, S1, 0) =/= notFound /\
+     find(S, S1, N) =/= notFound /\
      C' := qid(string(Q) + "." + string(Ty)) .
 
  op getLHS : Rule -> Term .
